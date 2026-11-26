@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-11-26T16:20:01.780Z",
+  "chapters": [
+    {
+      "chapterId": "ch08",
+      "chapterNumber": 8,
+      "title": "Cell: The Unit of Life",
+      "unitTitle": "Unit 3 · Cell: Structure and Functions",
+      "pdfFile": "b11cell.pdf",
+      "sha256": "6771c5ae1d6468e6585a5531d9a64cf06478d7ed05bb630eccd2b9a229ee2c28",
+      "pageCount": 19,
+      "ncertPageRange": [
+        85,
+        103
+      ],
+      "dataFile": "src/data/chapters/ch08-cell-unit-of-life.ts",
+      "diagramCount": 14,
+      "lineCount": 332,
+      "vaultCount": 42,
+      "generatedAt": "2026-11-26T16:20:01.762Z"
+    },
+    {
+      "chapterId": "ch09",
+      "chapterNumber": 9,
+      "title": "Biomolecules",
+      "unitTitle": "Unit 3 · Cell: Structure and Functions",
+      "pdfFile": "b11biomol.pdf",
+      "sha256": "facdbbffa75e8355a1af5362a4e190826352f934bb4c0a6eb2dbb9ccffcf66f5",
+      "pageCount": 16,
+      "ncertPageRange": [
+        104,
+        119
+      ],
+      "dataFile": "src/data/chapters/ch09-biomolecules.ts",
+      "diagramCount": 6,
+      "lineCount": 321,
+      "vaultCount": 29,
+      "generatedAt": "2026-11-26T16:20:01.770Z"
+    },
+    {
+      "chapterId": "ch10",
+      "chapterNumber": 10,
+      "title": "Cell Cycle and Cell Division",
+      "unitTitle": "Unit 3 · Cell: Structure and Functions",
+      "pdfFile": "b11celldiv.pdf",
+      "sha256": "1fbd61044264b30d19f075e4a9a15699b0d0f1d5c51cf094e4e9b18566bcb72c",
+      "pageCount": 11,
+      "ncertPageRange": [
+        120,
+        130
+      ],
+      "dataFile": "src/data/chapters/ch10-cell-cycle-division.ts",
+      "diagramCount": 5,
+      "lineCount": 206,
+      "vaultCount": 23,
+      "generatedAt": "2026-11-26T16:20:01.780Z"
+    }
+  ]
+}

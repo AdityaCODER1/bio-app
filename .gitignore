@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+.venv/
+
+# Build output
+dist/
+
+# Local personal config, API keys, and synced study progress
+user-data/
+.env
+.env.local
+.env.*.local
+
+# OS / Editor
+.DS_Store
+*.log
+.vscode/
+.idea/
