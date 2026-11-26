@@ -92,3 +92,4 @@ Create `src/data/chapters/chXX-<slug>.ts` exporting `chapterXX: ChapterData` usi
    npm run validate:chapters && npm run test && npm run build
    ```
 4. Confirm all checks pass with zero errors and zero unprocessed-PDF warnings.
+5. Commit and push to `main` — `.github/workflows/deploy-pages.yml` automatically validates, tests, builds (`VITE_BASE_PATH=/bio-app/`), and publishes the updated chapters to `https://adityacoder1.github.io/bio-app/`.
