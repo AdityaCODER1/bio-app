@@ -1,10 +1,25 @@
 import type { LocalAppConfig, StudyState } from '../types/study';
+import { isLocalDevOrigin } from '../utils/assetUrl';
 
 const IDB_NAME = 'ncert-biostudio-db';
 const IDB_VERSION = 1;
 const STORE_NAME = 'kv';
 const STUDY_KEY = 'study-state';
 const CONFIG_KEY = 'local-config';
+
+let persistenceRequested = false;
+
+async function ensurePersistentStorage(): Promise<void> {
+  if (persistenceRequested) return;
+  persistenceRequested = true;
+  try {
+    if (typeof navigator !== 'undefined' && navigator.storage?.persist) {
+      await navigator.storage.persist();
+    }
+  } catch {
+    // Ignore if browser does not support persistent storage API
+  }
+}
 
 export function createEmptyStudyState(): StudyState {
   return {
@@ -94,20 +109,24 @@ export interface LoadStudyResult {
 }
 
 export async function loadStudyState(): Promise<LoadStudyResult> {
+  void ensurePersistentStorage();
+
   let diskState: StudyState | null = null;
   let diskSyncAvailable = false;
 
-  try {
-    const res = await fetch('/api/study-state', { cache: 'no-store' });
-    if (res.ok) {
-      diskSyncAvailable = true;
-      const json = (await res.json()) as { exists?: boolean; data?: StudyState | null };
-      if (json.exists && json.data) {
-        diskState = json.data;
+  if (isLocalDevOrigin()) {
+    try {
+      const res = await fetch('/api/study-state', { cache: 'no-store' });
+      if (res.ok) {
+        diskSyncAvailable = true;
+        const json = (await res.json()) as { exists?: boolean; data?: StudyState | null };
+        if (json.exists && json.data) {
+          diskState = json.data;
+        }
       }
+    } catch {
+      diskSyncAvailable = false;
     }
-  } catch {
-    diskSyncAvailable = false;
   }
 
   const idbState = await idbGet<StudyState>(STUDY_KEY);
@@ -162,17 +181,19 @@ export async function persistStudyState(
 
   await idbSet(STUDY_KEY, stamped);
 
-  try {
-    const res = await fetch('/api/study-state', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(stamped, null, 2),
-    });
-    if (res.ok) {
-      return { diskSaved: true, savedAt: stamped.updatedAt };
+  if (isLocalDevOrigin()) {
+    try {
+      const res = await fetch('/api/study-state', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(stamped, null, 2),
+      });
+      if (res.ok) {
+        return { diskSaved: true, savedAt: stamped.updatedAt };
+      }
+    } catch {
+      // Fallback to IndexedDB only
     }
-  } catch {
-    // Fallback to IndexedDB only
   }
 
   return { diskSaved: false, savedAt: stamped.updatedAt };
@@ -182,16 +203,18 @@ export async function loadLocalConfig(): Promise<LocalAppConfig> {
   const defaults = createDefaultConfig();
   let diskConfig: Partial<LocalAppConfig> | null = null;
 
-  try {
-    const res = await fetch('/api/local-config', { cache: 'no-store' });
-    if (res.ok) {
-      const json = (await res.json()) as { data?: Partial<LocalAppConfig> };
-      if (json.data) {
-        diskConfig = json.data;
+  if (isLocalDevOrigin()) {
+    try {
+      const res = await fetch('/api/local-config', { cache: 'no-store' });
+      if (res.ok) {
+        const json = (await res.json()) as { data?: Partial<LocalAppConfig> };
+        if (json.data) {
+          diskConfig = json.data;
+        }
       }
+    } catch {
+      // ignore
     }
-  } catch {
-    // ignore
   }
 
   const idbConfig = await idbGet<Partial<LocalAppConfig>>(CONFIG_KEY);
@@ -205,14 +228,16 @@ export async function loadLocalConfig(): Promise<LocalAppConfig> {
 
 export async function persistLocalConfig(config: LocalAppConfig): Promise<void> {
   await idbSet(CONFIG_KEY, config);
-  try {
-    await fetch('/api/local-config', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(config, null, 2),
-    });
-  } catch {
-    // IndexedDB already persisted
+  if (isLocalDevOrigin()) {
+    try {
+      await fetch('/api/local-config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config, null, 2),
+      });
+    } catch {
+      // IndexedDB already persisted
+    }
   }
 }
 

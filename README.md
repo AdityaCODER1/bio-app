@@ -12,7 +12,14 @@ A macOS dark-themed desktop study workspace (`Vite + React + TypeScript + Vanill
 
 See `src/data/chapters/inventory.json` for SHA-256 checksums and `MANUAL.md` for adding new NCERT chapters via Antigravity.
 
-## Quick Start
+## Live App (GitHub Pages)
+
+- **Live URL**: `https://adityacoder1.github.io/bio-app/`
+- **Automatic updates**: Every time new NCERT chapters are generated and pushed to `main`, GitHub Actions automatically rebuilds and publishes the updated app (~1 minute). Just refresh!
+- **Private Browser Storage**: Your Gemini API key, line mastery, custom lines, tagged notes, and pinned MCQs are stored privately in your browser's persistent `IndexedDB` (never uploaded to GitHub). Use **Settings (`⌘,`) → Export JSON Backup** anytime to save a snapshot.
+- **macOS Desktop Window**: In Safari choose **File → Add to Dock** (or Chrome/Arc **Install App**) to run BioStudio in its own standalone macOS window.
+
+## Optional: Run Locally
 
 ```bash
 git pull
@@ -20,7 +27,7 @@ npm install
 npm run dev
 ```
 
-Open the local URL printed by Vite (default `http://localhost:5173`).
+Open the local URL printed by Vite (default `http://localhost:5173`). When running locally, study data also mirrors automatically to gitignored `user-data/study-state.json`.
 
 ### Configure Gemini API Key
 1. Click the **Settings (⚙)** icon in the top-right toolbar (or press `⌘,`).

@@ -32,7 +32,12 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
 
   const handleSaveKey = () => {
     updateConfig({ apiKey: apiKeyDraft.trim(), customModelId: customModelDraft.trim() });
-    setTestResult({ ok: true, text: 'Saved locally to user-data/local-config.json (gitignored).' });
+    setTestResult({
+      ok: true,
+      text: diskSyncAvailable
+        ? 'Saved locally to user-data/local-config.json + Browser IndexedDB.'
+        : 'Saved privately in your browser (IndexedDB) — never uploaded anywhere.',
+    });
   };
 
   const handleTest = async () => {
@@ -221,8 +226,8 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             <div className="field-help">
               Status:{' '}
               {diskSyncAvailable
-                ? 'Active dual sync — saving automatically to user-data/study-state.json + IndexedDB.'
-                : 'IndexedDB active (start via npm run dev to enable automatic disk JSON sync).'}
+                ? 'Dual sync active — saving to user-data/study-state.json + Browser IndexedDB.'
+                : 'Private Browser Storage (IndexedDB) active — your notes, custom lines, pinned MCQs, and API key stay exclusively on this browser. Export a JSON backup anytime.'}
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
               <button type="button" className="btn-secondary" onClick={exportBackup}>

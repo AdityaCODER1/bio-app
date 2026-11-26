@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useStudy } from '../../state/studyStore';
 import type { ChapterDiagram, DiagramInfoPoint } from '../../types/study';
+import { resolveAssetUrl } from '../../utils/assetUrl';
 
 interface DiagramCardProps {
   chapterId: string;
@@ -131,7 +132,7 @@ export function DiagramCard({ chapterId, diagram }: DiagramCardProps) {
               }}
               title="Click to inspect full resolution"
             >
-              <img src={diagram.imagePath} alt={`${diagram.figureNumber}: ${diagram.caption}`} loading="lazy" />
+              <img src={resolveAssetUrl(diagram.imagePath)} alt={`${diagram.figureNumber}: ${diagram.caption}`} loading="lazy" />
             </div>
             <div className="diagram-visual-controls">
               <span>NCERT p.{diagram.ncertPage}</span>
@@ -309,7 +310,7 @@ export function DiagramCard({ chapterId, diagram }: DiagramCardProps) {
                 }}
               >
                 <img
-                  src={diagram.imagePath}
+                  src={resolveAssetUrl(diagram.imagePath)}
                   alt={diagram.caption}
                   style={{
                     maxWidth: '100%',

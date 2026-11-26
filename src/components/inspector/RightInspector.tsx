@@ -27,6 +27,7 @@ import {
   type GeneratedMcqDraft,
   type McqStyle,
 } from '../../types/study';
+import { resolveAssetUrl } from '../../utils/assetUrl';
 import { findDiagramById, getAllChapterLines } from '../../utils/chapterMetrics';
 
 const QUICK_PROMPTS = [
@@ -53,6 +54,7 @@ export function RightInspector({ chapter, onOpenSettings }: RightInspectorProps)
     state,
     config,
     effectiveModelId,
+    diskSyncAvailable,
     activeSelection,
     inspectorTab,
     setInspectorTab,
@@ -234,7 +236,12 @@ export function RightInspector({ chapter, onOpenSettings }: RightInspectorProps)
   };
 
   const letters = ['A', 'B', 'C', 'D'];
-  const pdfImageSrc = `/pdf-pages/${chapter.id}/page-${String(pdfPage).padStart(2, '0')}.webp`;
+  const pdfImageSrc = resolveAssetUrl(
+    `pdf-pages/${chapter.id}/page-${String(pdfPage).padStart(2, '0')}.webp`,
+  );
+  const externalPdfHref = diskSyncAvailable
+    ? `/api/chapter-pdf/${encodeURIComponent(chapter.pdfFile)}#page=${pdfPage}`
+    : `https://github.com/AdityaCODER1/bio-app/blob/main/${encodeURIComponent(chapter.pdfFile)}`;
 
   return (
     <aside className="inspector-pane" aria-label="Line AI, MCQ Lab, and PDF Page Inspector">
@@ -702,10 +709,14 @@ export function RightInspector({ chapter, onOpenSettings }: RightInspectorProps)
               </button>
               <a
                 className="icon-btn"
-                href={`/api/chapter-pdf/${encodeURIComponent(chapter.pdfFile)}#page=${pdfPage}`}
+                href={externalPdfHref}
                 target="_blank"
                 rel="noreferrer"
-                title="Open original NCERT PDF in browser tab"
+                title={
+                  diskSyncAvailable
+                    ? 'Open original NCERT PDF in browser tab'
+                    : 'Open original NCERT PDF on GitHub'
+                }
               >
                 <ExternalLink size={13} />
               </a>

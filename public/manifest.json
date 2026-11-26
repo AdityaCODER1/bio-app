@@ -1,0 +1,16 @@
+{
+  "name": "BioStudio — NCERT Biology Mastery",
+  "short_name": "BioStudio",
+  "description": "macOS dark desktop study app for verbatim line-by-line NCERT Biology mastery with Gemini AI.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#121316",
+  "theme_color": "#121316",
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

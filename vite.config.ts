@@ -16,6 +16,7 @@ function localStudySyncPlugin(): Plugin {
 }
 
 export default defineConfig({
+  base: process.env.VITE_BASE_PATH ?? (process.env.GITHUB_ACTIONS ? '/bio-app/' : '/'),
   plugins: [react(), localStudySyncPlugin()],
   test: {
     environment: 'jsdom',
