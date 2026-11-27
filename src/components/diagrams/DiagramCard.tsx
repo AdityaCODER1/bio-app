@@ -68,7 +68,7 @@ export function DiagramCard({ chapterId, diagram }: DiagramCardProps) {
             <span className="diagram-fig-badge">{diagram.figureNumber}</span>
             <span className="diagram-caption">{diagram.caption}</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div className="diagram-header-actions">
             <button
               type="button"
               className={`btn-ghost ${mastery === 'mastered' ? 'active' : ''}`}
@@ -196,10 +196,9 @@ export function DiagramCard({ chapterId, diagram }: DiagramCardProps) {
                 className="inline-composer"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div style={{ display: 'flex', gap: 6 }}>
+                <div className="diagram-point-row">
                   <select
-                    className="macos-select"
-                    style={{ width: 130 }}
+                    className="macos-select diagram-point-select"
                     value={newCategory}
                     onChange={(e) =>
                       setNewCategory(e.target.value as DiagramInfoPoint['category'])

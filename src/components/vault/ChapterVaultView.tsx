@@ -110,7 +110,7 @@ export function ChapterVaultView({ chapter, embedded = false }: ChapterVaultView
 
       {adding && (
         <div className="inline-composer" style={{ marginBottom: 18 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '210px 1fr', gap: 8 }}>
+          <div className="vault-composer-row">
             <select
               className="macos-select"
               value={newCategory}

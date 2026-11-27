@@ -1,5 +1,6 @@
+import { X } from 'lucide-react';
 import { CHAPTERS } from '../../data/chapters';
-import { useStudy } from '../../state/studyStore';
+import { isCompactViewport, useStudy } from '../../state/studyStore';
 import {
   LINE_HIGHLIGHT_META,
   type ChapterData,
@@ -47,10 +48,22 @@ function ProgressRing({ percent }: { percent: number }) {
 }
 
 export function ChapterSidebar({ activeChapter }: { activeChapter: ChapterData }) {
-  const { state, activeChapterId, setActiveChapterId, setActiveMode } = useStudy();
+  const { state, activeChapterId, setActiveChapterId, setActiveMode, setSidebarOpen } = useStudy();
+
+  const closeIfCompact = () => {
+    if (isCompactViewport()) {
+      setSidebarOpen(false);
+    }
+  };
+
+  const handleSelectChapter = (chapterId: string) => {
+    setActiveChapterId(chapterId);
+    closeIfCompact();
+  };
 
   const handleJumpSection = (sectionId: string) => {
     setActiveMode('read');
+    closeIfCompact();
     window.requestAnimationFrame(() => {
       const el = document.getElementById(`sec-${sectionId}`);
       el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -59,6 +72,21 @@ export function ChapterSidebar({ activeChapter }: { activeChapter: ChapterData }
 
   return (
     <aside className="sidebar-pane" aria-label="Chapter and Section Navigator">
+      <div className="mobile-drawer-header">
+        <div className="mobile-drawer-title">
+          <span>BioStudio</span>
+          <span className="app-brand-badge">NCERT</span>
+        </div>
+        <button
+          type="button"
+          className="icon-btn"
+          onClick={() => setSidebarOpen(false)}
+          aria-label="Close chapters drawer"
+        >
+          <X size={16} />
+        </button>
+      </div>
+
       <div className="sidebar-scroll">
         {Array.from(new Set(CHAPTERS.map((ch) => ch.unitTitle))).map((unitTitle, uIdx) => (
           <div key={unitTitle}>
@@ -77,7 +105,7 @@ export function ChapterSidebar({ activeChapter }: { activeChapter: ChapterData }
                   key={ch.id}
                   type="button"
                   className={`chapter-card-btn ${isActive ? 'active' : ''}`}
-                  onClick={() => setActiveChapterId(ch.id)}
+                  onClick={() => handleSelectChapter(ch.id)}
                 >
                   <ProgressRing percent={stats.masteryPercent} />
                   <div className="chapter-card-meta">
@@ -159,6 +187,7 @@ export function ChapterSidebar({ activeChapter }: { activeChapter: ChapterData }
             className="outline-btn level-1"
             onClick={() => {
               setActiveMode('read');
+              closeIfCompact();
               window.requestAnimationFrame(() => {
                 document
                   .getElementById('chapter-end-vault')

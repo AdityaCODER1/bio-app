@@ -47,6 +47,12 @@ function makeId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
+const COMPACT_VIEWPORT_MAX_PX = 960;
+
+export function isCompactViewport(): boolean {
+  return typeof window !== 'undefined' && window.innerWidth <= COMPACT_VIEWPORT_MAX_PX;
+}
+
 interface StudyContextValue {
   state: StudyState;
   config: LocalAppConfig;
@@ -172,9 +178,49 @@ export function StudyProvider({
   const [activeMode, setActiveMode] = useState<ActiveWorkspaceMode>('read');
   const [activeSelection, setActiveSelection] = useState<ActiveSelection | null>(null);
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>('ask');
-  const [inspectorOpen, setInspectorOpen] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [inspectorOpen, setInspectorOpenRaw] = useState(() => !isCompactViewport());
+  const [sidebarOpen, setSidebarOpenRaw] = useState(() => !isCompactViewport());
   const [jumpRequest, setJumpRequest] = useState<{ lineId: string; nonce: number } | null>(null);
+
+  const sidebarOpenRef = useRef(sidebarOpen);
+  sidebarOpenRef.current = sidebarOpen;
+  const inspectorOpenRef = useRef(inspectorOpen);
+  inspectorOpenRef.current = inspectorOpen;
+
+  const setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>> = useCallback((action) => {
+    const next = typeof action === 'function' ? action(sidebarOpenRef.current) : action;
+    sidebarOpenRef.current = next;
+    setSidebarOpenRaw(next);
+    if (next && isCompactViewport()) {
+      inspectorOpenRef.current = false;
+      setInspectorOpenRaw(false);
+    }
+  }, []);
+
+  const setInspectorOpen: React.Dispatch<React.SetStateAction<boolean>> = useCallback((action) => {
+    const next = typeof action === 'function' ? action(inspectorOpenRef.current) : action;
+    inspectorOpenRef.current = next;
+    setInspectorOpenRaw(next);
+    if (next && isCompactViewport()) {
+      sidebarOpenRef.current = false;
+      setSidebarOpenRaw(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let wasCompact = isCompactViewport();
+    const onResize = () => {
+      const nowCompact = isCompactViewport();
+      if (!wasCompact && nowCompact) {
+        setSidebarOpen(false);
+        setInspectorOpen(false);
+      }
+      wasCompact = nowCompact;
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [setInspectorOpen, setSidebarOpen]);
 
   const saveTimerRef = useRef<number | null>(null);
 
@@ -253,7 +299,7 @@ export function StudyProvider({
         setInspectorOpen(true);
       }
     },
-    [],
+    [setInspectorOpen],
   );
 
   const selectDiagram = useCallback(
@@ -264,15 +310,22 @@ export function StudyProvider({
         setInspectorOpen(true);
       }
     },
-    [],
+    [setInspectorOpen],
   );
 
-  const jumpToLine = useCallback((chapterId: string, lineId: string) => {
-    setActiveChapterId(chapterId);
-    setActiveMode('read');
-    setActiveSelection({ type: 'line', chapterId, id: lineId });
-    setJumpRequest({ lineId, nonce: Date.now() });
-  }, []);
+  const jumpToLine = useCallback(
+    (chapterId: string, lineId: string) => {
+      setActiveChapterId(chapterId);
+      setActiveMode('read');
+      setActiveSelection({ type: 'line', chapterId, id: lineId });
+      setJumpRequest({ lineId, nonce: Date.now() });
+      if (isCompactViewport()) {
+        setSidebarOpen(false);
+        setInspectorOpen(false);
+      }
+    },
+    [setInspectorOpen, setSidebarOpen],
+  );
 
   const setLineMastery = useCallback(
     (lineId: string, status: MasteryStatus) => {

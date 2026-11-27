@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CHAPTERS, getChapterById } from './data/chapters';
 import { DiagramsGalleryView } from './components/diagrams/DiagramsGalleryView';
 import { RightInspector } from './components/inspector/RightInspector';
+import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { TopToolbar } from './components/layout/TopToolbar';
 import { CommandPaletteModal } from './components/modals/CommandPaletteModal';
 import { SettingsModal } from './components/modals/SettingsModal';
@@ -9,7 +10,7 @@ import { LineReaderView } from './components/reader/LineReaderView';
 import { RevisionQueueView } from './components/revision/RevisionQueueView';
 import { ChapterSidebar } from './components/sidebar/ChapterSidebar';
 import { ChapterVaultView } from './components/vault/ChapterVaultView';
-import { StudyProvider, useStudy } from './state/studyStore';
+import { isCompactViewport, StudyProvider, useStudy } from './state/studyStore';
 import { LINE_HIGHLIGHT_ORDER } from './types/study';
 import { computeChapterStats, getAllChapterLines } from './utils/chapterMetrics';
 
@@ -29,12 +30,15 @@ function StudyWorkspace() {
     sidebarOpen,
     setSidebarOpen,
     inspectorOpen,
+    setInspectorOpen,
     jumpRequest,
   } = useStudy();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const centerPaneRef = useRef<HTMLElement | null>(null);
+  const pushedOverlayRef = useRef(false);
+  const closingFromPopstateRef = useRef(false);
 
   const chapter = useMemo(() => getChapterById(activeChapterId), [activeChapterId]);
   const allLines = useMemo(() => getAllChapterLines(chapter), [chapter]);
@@ -47,8 +51,10 @@ function StudyWorkspace() {
     }
   }, [activeChapterId, activeMode]);
 
-  // Ensure a valid default line is selected whenever switching chapters
+  // Ensure a valid default line is selected on desktop whenever switching chapters
+  // (Skipped on compact phone viewports so chapters open cleanly with zero inline action clutter)
   useEffect(() => {
+    if (isCompactViewport()) return;
     if (
       (!activeSelection || activeSelection.chapterId !== chapter.id) &&
       allLines.length > 0
@@ -66,6 +72,47 @@ function StudyWorkspace() {
     }, 60);
     return () => window.clearTimeout(timer);
   }, [jumpRequest]);
+
+  // Coordinate Android Back button / gesture so pressing Back closes mobile drawers & modals cleanly
+  const hasMobileOverlay =
+    isCompactViewport() && (settingsOpen || searchOpen || sidebarOpen || inspectorOpen);
+
+  useEffect(() => {
+    if (hasMobileOverlay && !pushedOverlayRef.current) {
+      closingFromPopstateRef.current = false;
+      window.history.pushState({ biostudioOverlay: true }, '');
+      pushedOverlayRef.current = true;
+    } else if (!hasMobileOverlay && pushedOverlayRef.current) {
+      pushedOverlayRef.current = false;
+      const wasPopstate = closingFromPopstateRef.current;
+      closingFromPopstateRef.current = false;
+      if (
+        !wasPopstate &&
+        (window.history.state as { biostudioOverlay?: boolean } | null)?.biostudioOverlay
+      ) {
+        window.history.back();
+      }
+    }
+  }, [hasMobileOverlay]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      if (!pushedOverlayRef.current) return;
+      pushedOverlayRef.current = false;
+      closingFromPopstateRef.current = true;
+      if (settingsOpen) {
+        setSettingsOpen(false);
+      } else if (searchOpen) {
+        setSearchOpen(false);
+      } else if (inspectorOpen) {
+        setInspectorOpen(false);
+      } else if (sidebarOpen) {
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [inspectorOpen, searchOpen, setInspectorOpen, setSidebarOpen, settingsOpen, sidebarOpen]);
 
   // Global desktop keyboard shortcuts
   useEffect(() => {
@@ -197,11 +244,24 @@ function StudyWorkspace() {
     <div className="app-window">
       <TopToolbar
         revisionQueueCount={stats.revisionQueueCount}
+        chapterNumber={chapter.chapterNumber}
+        chapterTitle={chapter.title}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenSearch={() => setSearchOpen(true)}
       />
 
       <div className="workspace-body">
+        {(sidebarOpen || inspectorOpen) && (
+          <div
+            className="mobile-pane-backdrop"
+            aria-hidden="true"
+            onClick={() => {
+              setSidebarOpen(false);
+              setInspectorOpen(false);
+            }}
+          />
+        )}
+
         {sidebarOpen && <ChapterSidebar activeChapter={chapter} />}
 
         <main ref={centerPaneRef} className="center-pane">
@@ -218,6 +278,8 @@ function StudyWorkspace() {
           />
         )}
       </div>
+
+      <MobileBottomNav revisionQueueCount={stats.revisionQueueCount} />
 
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       {searchOpen && <CommandPaletteModal onClose={() => setSearchOpen(false)} />}

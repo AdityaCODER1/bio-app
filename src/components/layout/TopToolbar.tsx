@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Cpu,
+  Download,
   Eye,
   EyeOff,
   Image as ImageIcon,
@@ -12,6 +13,7 @@ import {
   Settings,
   Type as TypeIcon,
 } from 'lucide-react';
+import { usePwaInstall } from '../../services/pwa';
 import { useStudy } from '../../state/studyStore';
 import {
   GEMINI_MODEL_PRESETS,
@@ -21,12 +23,16 @@ import {
 
 interface TopToolbarProps {
   revisionQueueCount: number;
+  chapterNumber?: number;
+  chapterTitle?: string;
   onOpenSettings: () => void;
   onOpenSearch: () => void;
 }
 
 export function TopToolbar({
   revisionQueueCount,
+  chapterNumber,
+  chapterTitle,
   onOpenSettings,
   onOpenSearch,
 }: TopToolbarProps) {
@@ -43,6 +49,8 @@ export function TopToolbar({
     syncStatus,
     diskSyncAvailable,
   } = useStudy();
+
+  const { canInstall, isStandalone, promptInstall } = usePwaInstall();
 
   const modes: Array<{ id: ActiveWorkspaceMode; label: string; icon: typeof BookOpen }> = [
     { id: 'read', label: 'Line Reader', icon: BookOpen },
@@ -64,6 +72,7 @@ export function TopToolbar({
           className={`icon-btn ${sidebarOpen ? 'active' : ''}`}
           onClick={() => setSidebarOpen((v) => !v)}
           title="Toggle Sidebar (⌘\)"
+          aria-label="Toggle Chapters Sidebar"
         >
           <PanelLeft size={15} />
         </button>
@@ -71,6 +80,18 @@ export function TopToolbar({
           <span>BioStudio</span>
           <span className="app-brand-badge">NCERT</span>
         </div>
+        {chapterNumber !== undefined && (
+          <button
+            type="button"
+            className="mobile-chapter-trigger"
+            onClick={() => setSidebarOpen((v) => !v)}
+            title="Switch NCERT Chapter or Section"
+            aria-label={`Chapter ${chapterNumber}: ${chapterTitle ?? 'BioStudio'}`}
+          >
+            <span className="mobile-chapter-num">Ch {chapterNumber}</span>
+            {chapterTitle && <span className="mobile-chapter-name">{chapterTitle}</span>}
+          </button>
+        )}
       </div>
 
       <div className="toolbar-center">
@@ -108,13 +129,14 @@ export function TopToolbar({
             className={`icon-btn ${config.clozeMode ? 'cloze-on' : ''}`}
             onClick={() => updateConfig({ clozeMode: !config.clozeMode })}
             title="Toggle Active Recall Cloze Mode (C)"
+            aria-label="Toggle Active Recall Cloze Mode"
           >
             {config.clozeMode ? <EyeOff size={14} /> : <Eye size={14} />}
-            <span>Cloze</span>
+            <span className="toolbar-btn-label">Cloze</span>
           </button>
           {config.clozeMode && (
             <select
-              className="cloze-scope-select"
+              className="cloze-scope-select desktop-only-control"
               aria-label="Cloze recall scope"
               title="Choose which lines are masked in Cloze Mode"
               value={config.clozeScope}
@@ -131,11 +153,12 @@ export function TopToolbar({
 
         <button
           type="button"
-          className="icon-btn"
+          className="icon-btn desktop-only-control"
           onClick={() =>
             updateConfig({ readerFont: config.readerFont === 'serif' ? 'sans' : 'serif' })
           }
           title={`Switch reading font (currently ${config.readerFont})`}
+          aria-label="Switch reading font"
         >
           <TypeIcon size={14} />
         </button>
@@ -145,11 +168,15 @@ export function TopToolbar({
           className="icon-btn"
           onClick={onOpenSearch}
           title="Search all NCERT lines, diagrams & vault (⌘K)"
+          aria-label="Search NCERT"
         >
           <Search size={14} />
         </button>
 
-        <label className="model-select-pill" title="Active Gemini model for Q&A & MCQs">
+        <label
+          className="model-select-pill desktop-only-control"
+          title="Active Gemini model for Q&A & MCQs"
+        >
           <Cpu size={13} color="var(--accent-blue)" />
           <select
             aria-label="Select Gemini model"
@@ -174,7 +201,7 @@ export function TopToolbar({
         </label>
 
         <div
-          className="sync-indicator"
+          className="sync-indicator desktop-only-control"
           title={
             diskSyncAvailable
               ? 'Synced to user-data/study-state.json + IndexedDB'
@@ -201,11 +228,24 @@ export function TopToolbar({
           </span>
         </div>
 
+        {canInstall && !isStandalone && (
+          <button
+            type="button"
+            className="icon-btn pwa-install-btn"
+            onClick={() => void promptInstall()}
+            title="Install BioStudio App for offline use"
+            aria-label="Install BioStudio App"
+          >
+            <Download size={14} />
+          </button>
+        )}
+
         <button
           type="button"
           className="icon-btn"
           onClick={onOpenSettings}
-          title="Gemini API Key, Models & Backup Settings (⌘,)"
+          title="Gemini API Key, Models, App Install & Backup Settings (⌘,)"
+          aria-label="Open Settings"
         >
           <Settings size={15} />
         </button>
@@ -215,6 +255,7 @@ export function TopToolbar({
           className={`icon-btn ${inspectorOpen ? 'active' : ''}`}
           onClick={() => setInspectorOpen((v) => !v)}
           title="Toggle Right Inspector"
+          aria-label="Toggle AI and PDF Inspector"
         >
           <PanelRight size={15} />
         </button>

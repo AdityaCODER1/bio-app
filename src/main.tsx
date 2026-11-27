@@ -4,6 +4,10 @@ import 'katex/dist/katex.min.css';
 import './styles/tokens.css';
 import './styles/macos-ui.css';
 import App from './App';
+import { initPwaListeners, registerServiceWorker } from './services/pwa';
+
+initPwaListeners();
+registerServiceWorker();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

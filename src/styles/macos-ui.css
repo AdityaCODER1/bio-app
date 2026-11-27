@@ -2453,3 +2453,681 @@
   border-color: rgba(10, 132, 255, 0.4);
   color: var(--text-primary);
 }
+
+/* =========================================================
+   PWA Install & Responsive Component Helpers (Desktop Default)
+   ========================================================= */
+
+@supports (height: 100dvh) {
+  .app-window {
+    height: 100dvh;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+.pwa-install-btn {
+  color: var(--accent-teal);
+}
+
+.pwa-install-btn:hover {
+  background: var(--accent-teal-soft);
+  color: var(--accent-teal);
+  border-color: rgba(64, 200, 224, 0.28);
+}
+
+.pwa-settings-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-hairline);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pwa-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pwa-settings-row > button,
+.pwa-settings-row > span {
+  flex-shrink: 0;
+}
+
+.pwa-offline-divider {
+  padding-top: 10px;
+  border-top: 1px solid var(--border-hairline);
+}
+
+.inspector-tabs-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inspector-tabs-row .inspector-tabs {
+  flex: 1;
+  min-width: 0;
+}
+
+.vault-composer-row {
+  display: grid;
+  grid-template-columns: 210px 1fr;
+  gap: 8px;
+}
+
+.diagram-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.diagram-point-row {
+  display: flex;
+  gap: 6px;
+}
+
+.diagram-point-select {
+  width: 130px;
+  flex-shrink: 0;
+}
+
+/* Hidden on desktop (> 960px / > 768px) to keep 3-pane macOS view 100% untouched */
+.mobile-pane-backdrop,
+.mobile-drawer-header,
+.mobile-inspector-close,
+.mobile-chapter-trigger,
+.mobile-bottom-nav {
+  display: none;
+}
+
+/* =========================================================
+   Compact Tablet & Phone Slide-Over Drawers (<= 960px)
+   ========================================================= */
+
+@keyframes drawerBackdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 960px) {
+  .mobile-pane-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.58);
+    backdrop-filter: blur(4px);
+    z-index: 45;
+    animation: drawerBackdropIn 160ms ease-out;
+  }
+
+  .sidebar-pane {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(86vw, 316px);
+    min-width: 0;
+    z-index: 50;
+    background: #17191f;
+    box-shadow: 12px 0 36px rgba(0, 0, 0, 0.58);
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+    animation: slideInLeft 190ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .mobile-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 10px 10px 14px;
+    border-bottom: 1px solid var(--border-hairline);
+    flex-shrink: 0;
+  }
+
+  .mobile-drawer-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13.5px;
+    font-weight: 650;
+    color: var(--text-primary);
+  }
+
+  .sidebar-footer {
+    display: none;
+  }
+
+  .inspector-pane {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: min(92vw, 420px);
+    min-width: 0;
+    z-index: 50;
+    box-shadow: -12px 0 36px rgba(0, 0, 0, 0.58);
+    padding-top: var(--safe-top);
+    animation: slideInRight 190ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .inspector-composer {
+    padding-bottom: calc(10px + var(--safe-bottom));
+  }
+
+  .mobile-inspector-close {
+    display: inline-flex;
+    flex-shrink: 0;
+    height: 34px;
+    min-width: 34px;
+  }
+}
+
+/* =========================================================
+   Phone-First Uncluttered Layout (<= 768px)
+   ========================================================= */
+
+@media (max-width: 768px) {
+  .macos-toolbar {
+    height: auto;
+    min-height: calc(50px + var(--safe-top));
+    padding: var(--safe-top) 8px 0;
+    gap: 6px;
+  }
+
+  .traffic-lights,
+  .app-brand,
+  .toolbar-center,
+  .desktop-only-control,
+  .toolbar-btn-label {
+    display: none;
+  }
+
+  .toolbar-left {
+    min-width: 0;
+    flex: 1;
+    gap: 6px;
+    overflow: hidden;
+  }
+
+  .toolbar-right {
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .macos-toolbar .icon-btn {
+    height: 36px;
+    min-width: 36px;
+    padding: 0 7px;
+  }
+
+  .mobile-chapter-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    max-width: 100%;
+    height: 34px;
+    padding: 0 9px;
+    border-radius: 8px;
+    border: 1px solid var(--border-hairline);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary);
+    font-size: 12.5px;
+    font-weight: 600;
+    overflow: hidden;
+  }
+
+  .mobile-chapter-trigger:active {
+    background: rgba(255, 255, 255, 0.09);
+  }
+
+  .mobile-chapter-num {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent-teal);
+    flex-shrink: 0;
+  }
+
+  .mobile-chapter-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-primary);
+  }
+
+  /* Sleek 4-mode Bottom Tab Bar */
+  .mobile-bottom-nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: center;
+    min-height: calc(var(--mobile-nav-h) + var(--safe-bottom));
+    padding: 4px 6px calc(4px + var(--safe-bottom));
+    background: var(--bg-titlebar);
+    backdrop-filter: blur(22px) saturate(160%);
+    border-top: 1px solid var(--border-hairline);
+    user-select: none;
+    z-index: 30;
+    flex-shrink: 0;
+  }
+
+  .mobile-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 46px;
+    padding: 4px 2px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-tertiary);
+    transition: color 120ms ease, background 120ms ease;
+  }
+
+  .mobile-nav-btn.active {
+    color: var(--accent-blue);
+    background: rgba(10, 132, 255, 0.1);
+  }
+
+  .mobile-nav-icon-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-nav-badge {
+    position: absolute;
+    top: -5px;
+    right: -13px;
+    min-width: 16px;
+    height: 15px;
+    padding: 0 4px;
+    border-radius: var(--radius-pill);
+    background: var(--accent-amber);
+    color: #121316;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .mobile-nav-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  /* Center Reader & Content Views */
+  .center-pane {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .center-container,
+  .center-container.wide {
+    padding: 16px 14px 48px;
+  }
+
+  .chapter-hero {
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+  }
+
+  .chapter-hero h1 {
+    font-size: 21px;
+    line-height: 1.24;
+  }
+
+  .chapter-hero-stats {
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .stat-strip {
+    gap: 6px 12px;
+    font-size: 11.5px;
+  }
+
+  /* Single-row horizontally scrollable filter strips (prevents 3-row pill clutter) */
+  .reader-filter-bar,
+  .vault-filter-pills,
+  .spotlight-filter-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    max-width: 100%;
+    padding-bottom: 2px;
+  }
+
+  .reader-filter-bar::-webkit-scrollbar,
+  .vault-filter-pills::-webkit-scrollbar,
+  .spotlight-filter-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .reader-filter-bar > *,
+  .vault-filter-pills > *,
+  .spotlight-filter-bar > * {
+    flex-shrink: 0;
+  }
+
+  .section-header-row {
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .section-heading {
+    font-size: 16px;
+  }
+
+  .section-heading.level-2 {
+    font-size: 14.8px;
+  }
+
+  .section-num-tag,
+  .ncert-callout-badge {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Clean Full-Width Line Reader (Actions reveal cleanly below selected sentence only) */
+  .line-row {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 8px;
+    padding: 9px 8px 9px 6px;
+  }
+
+  .line-gutter {
+    gap: 4px;
+    padding-top: 3px;
+  }
+
+  .line-status-btn {
+    width: 20px;
+    height: 20px;
+  }
+
+  .line-num {
+    font-size: 9.8px;
+  }
+
+  .reader-size-compact .line-text-content {
+    font-size: 14.5px;
+    line-height: 1.6;
+  }
+
+  .reader-size-comfortable .line-text-content {
+    font-size: 16px;
+    line-height: 1.68;
+  }
+
+  .reader-size-large .line-text-content {
+    font-size: 18px;
+    line-height: 1.74;
+  }
+
+  .line-quick-actions {
+    display: none;
+  }
+
+  .line-row-wrap.selected .line-quick-actions {
+    display: flex;
+    opacity: 1;
+    grid-column: 1 / -1;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 2px 2px;
+    margin-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.065);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .line-row-wrap.selected .line-quick-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .line-row-wrap.selected .highlight-swatch-bar {
+    padding: 3px 7px;
+    gap: 7px;
+    flex-shrink: 0;
+  }
+
+  .line-row-wrap.selected .highlight-dot-btn {
+    width: 18px;
+    height: 18px;
+  }
+
+  .line-row-wrap.selected .highlight-clear-btn {
+    width: 20px;
+    height: 20px;
+  }
+
+  .line-row-wrap.selected .mini-action-btn {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+
+  .inline-annotations {
+    margin: 0 8px 10px 8px;
+  }
+
+  /* Diagrams */
+  .diagram-card {
+    margin: 16px 0 20px;
+  }
+
+  .diagram-card-header {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .diagram-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .diagram-visual-pane {
+    border-right: none;
+    border-bottom: 1px solid var(--border-hairline);
+    padding: 12px;
+  }
+
+  .diagram-info-pane {
+    max-height: none;
+    overflow-y: visible;
+    padding: 12px;
+  }
+
+  .diagram-point-row {
+    flex-direction: column;
+  }
+
+  .diagram-point-select {
+    width: 100%;
+  }
+
+  /* Vault */
+  .vault-header {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .vault-composer-row {
+    grid-template-columns: 1fr;
+  }
+
+  .vault-row {
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: 6px 10px;
+    padding: 11px;
+  }
+
+  .vault-detail {
+    grid-column: 2;
+  }
+
+  .vault-row-actions {
+    grid-column: 2;
+    justify-content: flex-end;
+    margin-top: 2px;
+  }
+
+  /* Revision Queue */
+  .revise-summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .revise-stat-box {
+    padding: 10px 12px;
+  }
+
+  .revise-stat-num {
+    font-size: 18px;
+  }
+
+  .revise-item-card {
+    padding: 12px;
+  }
+
+  .revise-item-top {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Tables & Equations */
+  .ncert-table-head {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 9px 12px;
+  }
+
+  .ncert-table th,
+  .ncert-table td {
+    padding: 7px 10px;
+    font-size: 12.2px;
+  }
+
+  .equation-card {
+    padding: 12px;
+    overflow-x: auto;
+  }
+
+  .equation-formula {
+    font-size: 13px;
+  }
+
+  /* Modals as Clean Mobile Sheets */
+  .modal-backdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .macos-modal {
+    max-width: 100%;
+    max-height: 92dvh;
+    border-radius: 16px 16px 0 0;
+    border-bottom: none;
+    padding-bottom: var(--safe-bottom);
+  }
+
+  .macos-modal.lightbox {
+    max-width: 100%;
+    max-height: 96dvh;
+  }
+
+  .modal-header {
+    padding: 13px 14px;
+  }
+
+  .modal-body {
+    padding: 14px;
+  }
+
+  .modal-body .segmented-control {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .modal-body .segmented-control::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pwa-settings-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* Prevent mobile browser auto-zoom on focused form controls */
+  .composer-textarea,
+  .macos-input,
+  .macos-select {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .inspector-pane {
+    width: 100vw;
+    max-width: 100vw;
+    border-left: none;
+    box-shadow: none;
+  }
+
+  .inspector-tab-btn {
+    padding: 6px 4px;
+    font-size: 11.5px;
+  }
+}
+

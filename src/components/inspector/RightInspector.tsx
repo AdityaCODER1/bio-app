@@ -15,6 +15,7 @@ import {
   Sparkles,
   Sun,
   Trash2,
+  X,
 } from 'lucide-react';
 import {
   askGeminiAboutTarget,
@@ -65,6 +66,7 @@ export function RightInspector({ chapter, onOpenSettings }: RightInspectorProps)
     activeSelection,
     inspectorTab,
     setInspectorTab,
+    setInspectorOpen,
     appendChatMessage,
     clearChatThread,
     addNote,
@@ -276,30 +278,41 @@ export function RightInspector({ chapter, onOpenSettings }: RightInspectorProps)
   return (
     <aside className="inspector-pane" aria-label="Line AI, MCQ Lab, and PDF Page Inspector">
       <div className="inspector-header">
-        <div className="inspector-tabs">
+        <div className="inspector-tabs-row">
+          <div className="inspector-tabs">
+            <button
+              type="button"
+              className={`inspector-tab-btn ${inspectorTab === 'ask' ? 'active' : ''}`}
+              onClick={() => setInspectorTab('ask')}
+            >
+              <Sparkles size={13} /> Ask Gemini
+            </button>
+            <button
+              type="button"
+              className={`inspector-tab-btn ${inspectorTab === 'mcq' ? 'active' : ''}`}
+              onClick={() => setInspectorTab('mcq')}
+            >
+              <HelpCircle size={13} /> MCQ Lab
+              {pinnedMcqs.length > 0 && (
+                <span className="micro-badge has-mcqs">{pinnedMcqs.length}</span>
+              )}
+            </button>
+            <button
+              type="button"
+              className={`inspector-tab-btn ${inspectorTab === 'pdf' ? 'active' : ''}`}
+              onClick={() => setInspectorTab('pdf')}
+            >
+              <FileText size={13} /> PDF Peek
+            </button>
+          </div>
           <button
             type="button"
-            className={`inspector-tab-btn ${inspectorTab === 'ask' ? 'active' : ''}`}
-            onClick={() => setInspectorTab('ask')}
+            className="icon-btn mobile-inspector-close"
+            onClick={() => setInspectorOpen(false)}
+            aria-label="Close inspector"
+            title="Close inspector"
           >
-            <Sparkles size={13} /> Ask Gemini
-          </button>
-          <button
-            type="button"
-            className={`inspector-tab-btn ${inspectorTab === 'mcq' ? 'active' : ''}`}
-            onClick={() => setInspectorTab('mcq')}
-          >
-            <HelpCircle size={13} /> MCQ Lab
-            {pinnedMcqs.length > 0 && (
-              <span className="micro-badge has-mcqs">{pinnedMcqs.length}</span>
-            )}
-          </button>
-          <button
-            type="button"
-            className={`inspector-tab-btn ${inspectorTab === 'pdf' ? 'active' : ''}`}
-            onClick={() => setInspectorTab('pdf')}
-          >
-            <FileText size={13} /> PDF Peek
+            <X size={16} />
           </button>
         </div>
 

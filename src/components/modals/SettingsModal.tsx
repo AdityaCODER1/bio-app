@@ -1,13 +1,20 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Check,
   Download,
+  HardDriveDownload,
   KeyRound,
   Loader2,
+  Smartphone,
   Upload,
   X,
 } from 'lucide-react';
 import { testGeminiConnection } from '../../services/geminiClient';
+import {
+  downloadAllOfflineMedia,
+  getOfflineMediaStatus,
+  usePwaInstall,
+} from '../../services/pwa';
 import { useStudy } from '../../state/studyStore';
 import { GEMINI_MODEL_PRESETS, type ClozeScope } from '../../types/study';
 
@@ -21,6 +28,8 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
     importBackupJson,
   } = useStudy();
 
+  const { canInstall, isStandalone, platformHint, promptInstall } = usePwaInstall();
+
   const [apiKeyDraft, setApiKeyDraft] = useState(config.apiKey);
   const [customModelDraft, setCustomModelDraft] = useState(config.customModelId);
   const [testing, setTesting] = useState(false);
@@ -28,7 +37,64 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const [importFeedback, setImportFeedback] = useState<{ ok: boolean; text: string } | null>(
     null,
   );
+  const [installFeedback, setInstallFeedback] = useState<string | null>(null);
+  const [offlineStatus, setOfflineStatus] = useState<{
+    supported: boolean;
+    cached: number;
+    total: number;
+  } | null>(null);
+  const [downloadingMedia, setDownloadingMedia] = useState(false);
+  const [offlineFeedback, setOfflineFeedback] = useState<{ ok: boolean; text: string } | null>(
+    null,
+  );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void getOfflineMediaStatus().then((status) => {
+      if (active) setOfflineStatus(status);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    setInstallFeedback(null);
+    const outcome = await promptInstall();
+    if (outcome === 'accepted') {
+      setInstallFeedback('BioStudio is installing to your device.');
+    } else if (outcome === 'dismissed') {
+      setInstallFeedback('Install prompt dismissed — you can install anytime from here or the browser menu.');
+    }
+  };
+
+  const handleDownloadOfflineMedia = async () => {
+    if (downloadingMedia) return;
+    setDownloadingMedia(true);
+    setOfflineFeedback(null);
+    try {
+      const res = await downloadAllOfflineMedia((progress) => {
+        setOfflineStatus({ supported: true, cached: progress.cached, total: progress.total });
+      });
+      setOfflineStatus({ supported: true, cached: res.cached, total: res.total });
+      setOfflineFeedback(
+        res.failed === 0
+          ? { ok: true, text: `All ${res.cached} NCERT diagrams & PDF pages cached for offline use.` }
+          : {
+              ok: false,
+              text: `Cached ${res.cached} of ${res.total} images (${res.failed} failed — check connection and retry).`,
+            },
+      );
+    } catch (err) {
+      setOfflineFeedback({
+        ok: false,
+        text: err instanceof Error ? err.message : 'Offline media download failed.',
+      });
+    } finally {
+      setDownloadingMedia(false);
+    }
+  };
 
   const handleSaveKey = () => {
     updateConfig({ apiKey: apiKeyDraft.trim(), customModelId: customModelDraft.trim() });
@@ -255,7 +321,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                 ? 'Dual sync active — saving to user-data/study-state.json + Browser IndexedDB.'
                 : 'Private Browser Storage (IndexedDB) active — your notes, custom lines, pinned MCQs, and API key stay exclusively on this browser. Export a JSON backup anytime.'}
             </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
               <button type="button" className="btn-secondary" onClick={exportBackup}>
                 <Download size={13} /> Export JSON Backup
               </button>
@@ -291,6 +357,94 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                 {importFeedback.text}
               </div>
             )}
+          </div>
+
+          {/* App Install & Offline Access (PWA) */}
+          <div className="field-group">
+            <div className="field-label">
+              <Smartphone size={12} style={{ marginRight: 5, verticalAlign: '-1px' }} />
+              App Install &amp; Offline Access (PWA)
+            </div>
+            <div className="pwa-settings-card">
+              <div className="pwa-settings-row">
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 12.8 }}>
+                    {isStandalone ? 'Installed as Standalone App' : 'Install BioStudio on This Device'}
+                  </div>
+                  <div className="field-help" style={{ marginTop: 2 }}>
+                    {isStandalone
+                      ? 'Running as an installed app. All 6 NCERT chapters, highlights, Cloze mode, and vault work offline.'
+                      : canInstall
+                        ? 'Install BioStudio directly from your browser for full-screen Android/desktop launch and offline study.'
+                        : platformHint === 'ios'
+                          ? 'In Safari, tap the Share button and choose "Add to Home Screen" to install BioStudio.'
+                          : platformHint === 'android'
+                            ? 'In Chrome on Android, tap the browser menu (⋮) and choose "Install app" or "Add to Home screen".'
+                            : 'Use your browser address bar Install icon or browser menu to install BioStudio locally.'}
+                  </div>
+                </div>
+                {isStandalone ? (
+                  <span className="micro-badge" style={{ color: 'var(--accent-green)', background: 'var(--accent-green-soft)' }}>
+                    <Check size={11} /> Installed
+                  </span>
+                ) : canInstall ? (
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => void handleInstallApp()}
+                  >
+                    <Download size={13} /> Install App
+                  </button>
+                ) : null}
+              </div>
+
+              {installFeedback && <div className="success-banner">{installFeedback}</div>}
+
+              {offlineStatus?.supported && offlineStatus.total > 0 && (
+                <div className="pwa-offline-divider">
+                  <div className="pwa-settings-row">
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 12.5 }}>
+                        Offline NCERT Diagrams &amp; PDF Pages
+                      </div>
+                      <div className="field-help" style={{ marginTop: 2 }}>
+                        All chapter text works offline automatically. Diagrams &amp; PDF pages cache as you view them ({offlineStatus.cached} / {offlineStatus.total} cached).
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      disabled={
+                        downloadingMedia ||
+                        (offlineStatus.total > 0 && offlineStatus.cached >= offlineStatus.total)
+                      }
+                      onClick={() => void handleDownloadOfflineMedia()}
+                    >
+                      {downloadingMedia ? (
+                        <>
+                          <Loader2 size={13} className="spin" />
+                          {offlineStatus.cached}/{offlineStatus.total}
+                        </>
+                      ) : offlineStatus.cached >= offlineStatus.total ? (
+                        <>
+                          <Check size={13} /> All Cached
+                        </>
+                      ) : (
+                        <>
+                          <HardDriveDownload size={13} /> Download All (~30 MB)
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {offlineFeedback && (
+                <div className={offlineFeedback.ok ? 'success-banner' : 'error-banner'}>
+                  {offlineFeedback.text}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
