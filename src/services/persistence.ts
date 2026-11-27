@@ -26,6 +26,8 @@ export function createEmptyStudyState(): StudyState {
     version: 1,
     updatedAt: new Date().toISOString(),
     lineMastery: {},
+    lineHighlights: {},
+    dismissedHighYieldIds: [],
     customLines: {},
     lineNotes: {},
     pinnedMcqs: {},
@@ -39,6 +41,36 @@ export function createEmptyStudyState(): StudyState {
   };
 }
 
+export function normalizeStudyState(raw?: Partial<StudyState> | null): StudyState {
+  const base = createEmptyStudyState();
+  if (!raw || typeof raw !== 'object') return base;
+  return {
+    ...base,
+    ...raw,
+    lineMastery: raw.lineMastery && typeof raw.lineMastery === 'object' ? raw.lineMastery : {},
+    lineHighlights:
+      raw.lineHighlights && typeof raw.lineHighlights === 'object' ? raw.lineHighlights : {},
+    dismissedHighYieldIds: Array.isArray(raw.dismissedHighYieldIds)
+      ? raw.dismissedHighYieldIds
+      : [],
+    customLines: raw.customLines && typeof raw.customLines === 'object' ? raw.customLines : {},
+    lineNotes: raw.lineNotes && typeof raw.lineNotes === 'object' ? raw.lineNotes : {},
+    pinnedMcqs: raw.pinnedMcqs && typeof raw.pinnedMcqs === 'object' ? raw.pinnedMcqs : {},
+    diagramMastery:
+      raw.diagramMastery && typeof raw.diagramMastery === 'object' ? raw.diagramMastery : {},
+    diagramExtraInfo:
+      raw.diagramExtraInfo && typeof raw.diagramExtraInfo === 'object' ? raw.diagramExtraInfo : {},
+    vaultMastery:
+      raw.vaultMastery && typeof raw.vaultMastery === 'object' ? raw.vaultMastery : {},
+    customVaultItems:
+      raw.customVaultItems && typeof raw.customVaultItems === 'object' ? raw.customVaultItems : {},
+    editedVaultItems:
+      raw.editedVaultItems && typeof raw.editedVaultItems === 'object' ? raw.editedVaultItems : {},
+    deletedVaultIds: Array.isArray(raw.deletedVaultIds) ? raw.deletedVaultIds : [],
+    aiThreads: raw.aiThreads && typeof raw.aiThreads === 'object' ? raw.aiThreads : {},
+  };
+}
+
 export function createDefaultConfig(): LocalAppConfig {
   return {
     apiKey: '',
@@ -48,6 +80,8 @@ export function createDefaultConfig(): LocalAppConfig {
     readerFont: 'serif',
     fontSize: 'comfortable',
     clozeMode: false,
+    clozeScope: 'all',
+    showPresetHighYield: true,
     showOnlyUnmastered: false,
     showPdfDarkFilter: false,
   };
@@ -136,13 +170,13 @@ export async function loadStudyState(): Promise<LoadStudyResult> {
     const idbTime = Date.parse(idbState.updatedAt || '') || 0;
     if (idbTime > diskTime) {
       return {
-        state: { ...createEmptyStudyState(), ...idbState },
+        state: normalizeStudyState(idbState),
         source: 'indexeddb',
         diskSyncAvailable,
       };
     }
     return {
-      state: { ...createEmptyStudyState(), ...diskState },
+      state: normalizeStudyState(diskState),
       source: 'disk',
       diskSyncAvailable,
     };
@@ -150,7 +184,7 @@ export async function loadStudyState(): Promise<LoadStudyResult> {
 
   if (diskState) {
     return {
-      state: { ...createEmptyStudyState(), ...diskState },
+      state: normalizeStudyState(diskState),
       source: 'disk',
       diskSyncAvailable,
     };
@@ -158,7 +192,7 @@ export async function loadStudyState(): Promise<LoadStudyResult> {
 
   if (idbState) {
     return {
-      state: { ...createEmptyStudyState(), ...idbState },
+      state: normalizeStudyState(idbState),
       source: 'indexeddb',
       diskSyncAvailable,
     };

@@ -13,26 +13,29 @@ import {
   exportStudyStateJson,
   loadLocalConfig,
   loadStudyState,
+  normalizeStudyState,
   persistLocalConfig,
   persistStudyState,
 } from '../services/persistence';
-import type {
-  ActiveSelection,
-  ActiveWorkspaceMode,
-  ChatMessage,
-  CustomUserLine,
-  DiagramInfoPoint,
-  GeneratedMcqDraft,
-  GeminiModelId,
-  InspectorTab,
-  LocalAppConfig,
-  MasteryStatus,
-  NoteTag,
-  SavedMcq,
-  StudyState,
-  UserNote,
-  VaultCategoryKey,
-  VaultItem,
+import {
+  LINE_HIGHLIGHT_ORDER,
+  type ActiveSelection,
+  type ActiveWorkspaceMode,
+  type ChatMessage,
+  type CustomUserLine,
+  type DiagramInfoPoint,
+  type GeneratedMcqDraft,
+  type GeminiModelId,
+  type InspectorTab,
+  type LineHighlightTier,
+  type LocalAppConfig,
+  type MasteryStatus,
+  type NoteTag,
+  type SavedMcq,
+  type StudyState,
+  type UserNote,
+  type VaultCategoryKey,
+  type VaultItem,
 } from '../types/study';
 
 type SyncStatus = 'loading' | 'idle' | 'saving' | 'saved-disk' | 'saved-browser' | 'error';
@@ -75,6 +78,13 @@ interface StudyContextValue {
   setLineMastery: (lineId: string, status: MasteryStatus) => void;
   cycleLineMastery: (lineId: string) => void;
   markLinesMastery: (lineIds: string[], status: MasteryStatus) => void;
+
+  setLineHighlight: (lineId: string, tier: LineHighlightTier | null) => void;
+  toggleLineHighlight: (lineId: string, tier: LineHighlightTier) => void;
+  cycleLineHighlight: (lineId: string) => void;
+  dismissPresetHighYield: (lineId: string) => void;
+  restorePresetHighYield: (lineId: string) => void;
+  restoreAllPresetHighYield: (lineIds?: string[]) => void;
 
   addCustomLine: (params: {
     chapterId: string;
@@ -298,6 +308,100 @@ export function StudyProvider({
         const nextMap = { ...prev.lineMastery };
         for (const id of lineIds) nextMap[id] = status;
         return { ...prev, lineMastery: nextMap };
+      });
+    },
+    [mutateState],
+  );
+
+  const setLineHighlight = useCallback(
+    (lineId: string, tier: LineHighlightTier | null) => {
+      mutateState((prev) => {
+        const nextHighlights = { ...prev.lineHighlights };
+        if (tier === null) {
+          delete nextHighlights[lineId];
+        } else {
+          nextHighlights[lineId] = tier;
+        }
+        return { ...prev, lineHighlights: nextHighlights };
+      });
+    },
+    [mutateState],
+  );
+
+  const toggleLineHighlight = useCallback(
+    (lineId: string, tier: LineHighlightTier) => {
+      mutateState((prev) => {
+        const nextHighlights = { ...prev.lineHighlights };
+        if (nextHighlights[lineId] === tier) {
+          delete nextHighlights[lineId];
+        } else {
+          nextHighlights[lineId] = tier;
+        }
+        return { ...prev, lineHighlights: nextHighlights };
+      });
+    },
+    [mutateState],
+  );
+
+  const cycleLineHighlight = useCallback(
+    (lineId: string) => {
+      mutateState((prev) => {
+        const current = prev.lineHighlights[lineId];
+        const nextHighlights = { ...prev.lineHighlights };
+        if (!current) {
+          nextHighlights[lineId] = LINE_HIGHLIGHT_ORDER[0];
+        } else {
+          const idx = LINE_HIGHLIGHT_ORDER.indexOf(current);
+          if (idx === -1 || idx === LINE_HIGHLIGHT_ORDER.length - 1) {
+            delete nextHighlights[lineId];
+          } else {
+            nextHighlights[lineId] = LINE_HIGHLIGHT_ORDER[idx + 1];
+          }
+        }
+        return { ...prev, lineHighlights: nextHighlights };
+      });
+    },
+    [mutateState],
+  );
+
+  const dismissPresetHighYield = useCallback(
+    (lineId: string) => {
+      mutateState((prev) => {
+        if (prev.dismissedHighYieldIds.includes(lineId)) return prev;
+        return {
+          ...prev,
+          dismissedHighYieldIds: [...prev.dismissedHighYieldIds, lineId],
+        };
+      });
+    },
+    [mutateState],
+  );
+
+  const restorePresetHighYield = useCallback(
+    (lineId: string) => {
+      mutateState((prev) => {
+        if (!prev.dismissedHighYieldIds.includes(lineId)) return prev;
+        return {
+          ...prev,
+          dismissedHighYieldIds: prev.dismissedHighYieldIds.filter((id) => id !== lineId),
+        };
+      });
+    },
+    [mutateState],
+  );
+
+  const restoreAllPresetHighYield = useCallback(
+    (lineIds?: string[]) => {
+      mutateState((prev) => {
+        if (prev.dismissedHighYieldIds.length === 0) return prev;
+        if (!lineIds) {
+          return { ...prev, dismissedHighYieldIds: [] };
+        }
+        const restoreSet = new Set(lineIds);
+        return {
+          ...prev,
+          dismissedHighYieldIds: prev.dismissedHighYieldIds.filter((id) => !restoreSet.has(id)),
+        };
       });
     },
     [mutateState],
@@ -656,10 +760,7 @@ export function StudyProvider({
         if (!parsed || typeof parsed !== 'object' || typeof parsed.lineMastery !== 'object') {
           return { ok: false, error: 'Invalid BioStudio backup JSON format.' };
         }
-        mutateState(() => ({
-          ...createEmptyStudyState(),
-          ...parsed,
-        }));
+        mutateState(() => normalizeStudyState(parsed));
         return { ok: true };
       } catch (err) {
         return {
@@ -697,6 +798,12 @@ export function StudyProvider({
     setLineMastery,
     cycleLineMastery,
     markLinesMastery,
+    setLineHighlight,
+    toggleLineHighlight,
+    cycleLineHighlight,
+    dismissPresetHighYield,
+    restorePresetHighYield,
+    restoreAllPresetHighYield,
     addCustomLine,
     updateCustomLine,
     deleteCustomLine,

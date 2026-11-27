@@ -13,7 +13,11 @@ import {
   Type as TypeIcon,
 } from 'lucide-react';
 import { useStudy } from '../../state/studyStore';
-import { GEMINI_MODEL_PRESETS, type ActiveWorkspaceMode } from '../../types/study';
+import {
+  GEMINI_MODEL_PRESETS,
+  type ActiveWorkspaceMode,
+  type ClozeScope,
+} from '../../types/study';
 
 interface TopToolbarProps {
   revisionQueueCount: number;
@@ -98,15 +102,32 @@ export function TopToolbar({
       </div>
 
       <div className="toolbar-right">
-        <button
-          type="button"
-          className={`icon-btn ${config.clozeMode ? 'cloze-on' : ''}`}
-          onClick={() => updateConfig({ clozeMode: !config.clozeMode })}
-          title="Toggle Active Recall Cloze Mode (C)"
-        >
-          {config.clozeMode ? <EyeOff size={14} /> : <Eye size={14} />}
-          <span>Cloze</span>
-        </button>
+        <div className="cloze-control-group">
+          <button
+            type="button"
+            className={`icon-btn ${config.clozeMode ? 'cloze-on' : ''}`}
+            onClick={() => updateConfig({ clozeMode: !config.clozeMode })}
+            title="Toggle Active Recall Cloze Mode (C)"
+          >
+            {config.clozeMode ? <EyeOff size={14} /> : <Eye size={14} />}
+            <span>Cloze</span>
+          </button>
+          {config.clozeMode && (
+            <select
+              className="cloze-scope-select"
+              aria-label="Cloze recall scope"
+              title="Choose which lines are masked in Cloze Mode"
+              value={config.clozeScope}
+              onChange={(e) =>
+                updateConfig({ clozeScope: e.target.value as ClozeScope })
+              }
+            >
+              <option value="all">All Lines</option>
+              <option value="highlighted">Highlighted</option>
+              <option value="volatile_trap">Volatile + Trap</option>
+            </select>
+          )}
+        </div>
 
         <button
           type="button"

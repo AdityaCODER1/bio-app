@@ -1,24 +1,93 @@
 import { useMemo, useState } from 'react';
-import { Search, X } from 'lucide-react';
+import { Highlighter, Search, X } from 'lucide-react';
 import { CHAPTERS } from '../../data/chapters';
 import { useStudy } from '../../state/studyStore';
-import { getAllChapterLines, getResolvedVaultItems } from '../../utils/chapterMetrics';
+import {
+  LINE_HIGHLIGHT_META,
+  type LineHighlightTier,
+} from '../../types/study';
+import {
+  createEmptyHighlightCounts,
+  getAllChapterLines,
+  getResolvedVaultItems,
+} from '../../utils/chapterMetrics';
+
+type PaletteHighlightFilter = 'none' | 'any' | LineHighlightTier;
+
+const PALETTE_TIER_CHIPS: LineHighlightTier[] = ['trap', 'volatile', 'pyq', 'important'];
 
 interface SearchHit {
   kind: 'line' | 'diagram' | 'vault';
   chapterId: string;
+  chapterNumber: number;
   chapterLabel: string;
   id: string;
   title: string;
   snippet: string;
+  highlightTier?: LineHighlightTier;
+  lineNumber?: number;
 }
 
 export function CommandPaletteModal({ onClose }: { onClose: () => void }) {
   const { state, jumpToLine, setActiveChapterId, setActiveMode, selectDiagram } = useStudy();
   const [query, setQuery] = useState('');
+  const [highlightFilter, setHighlightFilter] = useState<PaletteHighlightFilter>('none');
+
+  const globalHighlightCounts = useMemo(() => {
+    const countsByTier = createEmptyHighlightCounts();
+    let total = 0;
+    for (const ch of CHAPTERS) {
+      for (const { line } of getAllChapterLines(ch)) {
+        const tier = state.lineHighlights[line.id];
+        if (tier) {
+          countsByTier[tier]++;
+          total++;
+        }
+      }
+    }
+    return { total, countsByTier };
+  }, [state.lineHighlights]);
 
   const results = useMemo<SearchHit[]>(() => {
     const q = query.trim().toLowerCase();
+
+    // Cross-chapter highlight browsing mode (works even with empty query)
+    if (highlightFilter !== 'none') {
+      const hits: SearchHit[] = [];
+      for (const ch of CHAPTERS) {
+        const chLabel = `Ch ${ch.chapterNumber} · ${ch.title}`;
+        for (const { line, section } of getAllChapterLines(ch)) {
+          const tier = state.lineHighlights[line.id];
+          if (!tier) continue;
+          if (highlightFilter !== 'any' && tier !== highlightFilter) continue;
+          if (q.length > 0 && !line.text.toLowerCase().includes(q) && !section.title.toLowerCase().includes(q)) {
+            continue;
+          }
+          hits.push({
+            kind: 'line',
+            chapterId: ch.id,
+            chapterNumber: ch.chapterNumber,
+            chapterLabel: chLabel,
+            id: line.id,
+            title: `Line #${line.lineNumber} · ${section.number} (p.${line.ncertPage})`,
+            snippet: line.text,
+            highlightTier: tier,
+            lineNumber: line.lineNumber,
+          });
+        }
+      }
+
+      hits.sort((a, b) => {
+        const pA = a.highlightTier ? LINE_HIGHLIGHT_META[a.highlightTier].priority : 0;
+        const pB = b.highlightTier ? LINE_HIGHLIGHT_META[b.highlightTier].priority : 0;
+        if (pB !== pA) return pB - pA;
+        if (a.chapterNumber !== b.chapterNumber) return a.chapterNumber - b.chapterNumber;
+        return (a.lineNumber ?? 0) - (b.lineNumber ?? 0);
+      });
+
+      return hits.slice(0, 60);
+    }
+
     if (q.length < 2) return [];
     const hits: SearchHit[] = [];
 
@@ -30,10 +99,13 @@ export function CommandPaletteModal({ onClose }: { onClose: () => void }) {
           hits.push({
             kind: 'line',
             chapterId: ch.id,
+            chapterNumber: ch.chapterNumber,
             chapterLabel: chLabel,
             id: line.id,
             title: `Line #${line.lineNumber} · ${section.number} (p.${line.ncertPage})`,
             snippet: line.text,
+            highlightTier: state.lineHighlights[line.id],
+            lineNumber: line.lineNumber,
           });
         }
         if (hits.length >= 28) break;
@@ -47,6 +119,7 @@ export function CommandPaletteModal({ onClose }: { onClose: () => void }) {
           hits.push({
             kind: 'diagram',
             chapterId: ch.id,
+            chapterNumber: ch.chapterNumber,
             chapterLabel: chLabel,
             id: diag.id,
             title: `${diag.figureNumber} — ${diag.caption}`,
@@ -63,6 +136,7 @@ export function CommandPaletteModal({ onClose }: { onClose: () => void }) {
           hits.push({
             kind: 'vault',
             chapterId: ch.id,
+            chapterNumber: ch.chapterNumber,
             chapterLabel: chLabel,
             id: v.sourceLineId || v.id,
             title: `Vault · ${v.prompt}`,
@@ -73,7 +147,7 @@ export function CommandPaletteModal({ onClose }: { onClose: () => void }) {
     }
 
     return hits.slice(0, 35);
-  }, [query, state]);
+  }, [highlightFilter, query, state]);
 
   const handleSelect = (hit: SearchHit) => {
     if (hit.kind === 'line') {
@@ -87,6 +161,10 @@ export function CommandPaletteModal({ onClose }: { onClose: () => void }) {
       setActiveMode('vault');
     }
     onClose();
+  };
+
+  const toggleChip = (next: Exclude<PaletteHighlightFilter, 'none'>) => {
+    setHighlightFilter((prev) => (prev === next ? 'none' : next));
   };
 
   return (
@@ -118,7 +196,11 @@ export function CommandPaletteModal({ onClose }: { onClose: () => void }) {
               color: 'var(--text-primary)',
               outline: 'none',
             }}
-            placeholder="Search any NCERT sentence, scientist, enzyme, diagram, or trap…"
+            placeholder={
+              highlightFilter === 'none'
+                ? 'Search any NCERT sentence, scientist, enzyme, diagram, or trap…'
+                : 'Filter highlighted lines across all chapters…'
+            }
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
@@ -131,17 +213,59 @@ export function CommandPaletteModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
+        <div className="spotlight-filter-bar" role="group" aria-label="Cross-chapter highlight filters">
+          <button
+            type="button"
+            className={`filter-pill ${highlightFilter === 'any' ? 'active' : ''}`}
+            onClick={() => toggleChip('any')}
+          >
+            <Highlighter size={12} />
+            All Highlighted ({globalHighlightCounts.total})
+          </button>
+          {PALETTE_TIER_CHIPS.map((tier) => {
+            const meta = LINE_HIGHLIGHT_META[tier];
+            const count = globalHighlightCounts.countsByTier[tier];
+            return (
+              <button
+                key={tier}
+                type="button"
+                className={`filter-pill hl-filter-${tier} ${highlightFilter === tier ? 'active' : ''}`}
+                onClick={() => toggleChip(tier)}
+              >
+                <span className={`tier-dot tier-${tier}`} aria-hidden="true" />
+                <span>{meta.shortLabel}</span>
+                <span>({count})</span>
+              </button>
+            );
+          })}
+          {highlightFilter !== 'none' && (
+            <button
+              type="button"
+              className="btn-ghost"
+              style={{ marginLeft: 'auto', padding: '3px 7px', fontSize: 11.5 }}
+              onClick={() => setHighlightFilter('none')}
+            >
+              Clear Filter
+            </button>
+          )}
+        </div>
+
         <div className="modal-body" style={{ padding: 10, maxHeight: '60vh' }}>
-          {query.trim().length < 2 ? (
+          {highlightFilter === 'none' && query.trim().length < 2 ? (
             <div className="empty-state" style={{ padding: '26px 12px' }}>
               <p style={{ margin: 0 }}>
                 Type at least 2 characters — e.g. <code>zwitterionic</code>,{' '}
-                <code>chiasmata</code>, <code>tonoplast</code>, or <code>RuBisCO</code>.
+                <code>chiasmata</code>, <code>tonoplast</code>, or <code>RuBisCO</code> — or click a
+                highlight chip above to browse across all chapters.
               </p>
             </div>
           ) : results.length === 0 ? (
             <div className="empty-state" style={{ padding: '26px 12px' }}>
-              <p style={{ margin: 0 }}>No matches across loaded NCERT chapters.</p>
+              <p style={{ margin: 0 }}>
+                {highlightFilter === 'none'
+                  ? 'No matches across loaded NCERT chapters.'
+                  : 'No highlighted lines match this filter across loaded chapters yet.'}
+              </p>
             </div>
           ) : (
             results.map((hit, idx) => (
@@ -151,9 +275,17 @@ export function CommandPaletteModal({ onClose }: { onClose: () => void }) {
                 className="spotlight-result"
                 onClick={() => handleSelect(hit)}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                   <strong style={{ fontSize: 12.8 }}>{hit.title}</strong>
-                  <span className="micro-badge">{hit.chapterLabel}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    {hit.highlightTier && (
+                      <span className={`micro-badge hl-tier-${hit.highlightTier}`}>
+                        <span className={`tier-dot tier-${hit.highlightTier}`} aria-hidden="true" />
+                        {LINE_HIGHLIGHT_META[hit.highlightTier].shortLabel}
+                      </span>
+                    )}
+                    <span className="micro-badge">{hit.chapterLabel}</span>
+                  </div>
                 </div>
                 <div
                   style={{

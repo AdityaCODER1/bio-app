@@ -1,7 +1,16 @@
 import { CHAPTERS } from '../../data/chapters';
 import { useStudy } from '../../state/studyStore';
-import type { ChapterData } from '../../types/study';
-import { computeChapterStats } from '../../utils/chapterMetrics';
+import {
+  LINE_HIGHLIGHT_META,
+  type ChapterData,
+  type LineHighlightTier,
+} from '../../types/study';
+import {
+  computeChapterStats,
+  computeSectionHighlightSummary,
+} from '../../utils/chapterMetrics';
+
+const SIDEBAR_TIER_PRIORITY: LineHighlightTier[] = ['trap', 'volatile', 'pyq', 'important'];
 
 function ProgressRing({ percent }: { percent: number }) {
   const radius = 14;
@@ -76,12 +85,20 @@ export function ChapterSidebar({ activeChapter }: { activeChapter: ChapterData }
                     <div className="chapter-card-title">{ch.title}</div>
                     <div className="chapter-card-sub">
                       <span>{stats.totalLines} lines</span>
-                      <span>·</span>
-                      <span>{ch.diagrams.length} figs</span>
-                      {stats.revisionQueueCount > 0 && (
+                      {stats.highlightedLines > 0 && (
+                        <span style={{ color: 'var(--hl-important-text)' }}>
+                          · {stats.highlightedLines} hl
+                        </span>
+                      )}
+                      {stats.revisionQueueCount > 0 ? (
                         <span style={{ color: 'var(--accent-amber)' }}>
                           · {stats.revisionQueueCount} rev
                         </span>
+                      ) : (
+                        <>
+                          <span>·</span>
+                          <span>{ch.diagrams.length} figs</span>
+                        </>
                       )}
                     </div>
                   </div>
@@ -98,17 +115,45 @@ export function ChapterSidebar({ activeChapter }: { activeChapter: ChapterData }
         </div>
 
         <nav className="outline-list">
-          {activeChapter.sections.map((sec) => (
-            <button
-              key={sec.id}
-              type="button"
-              className={`outline-btn level-${sec.level}`}
-              onClick={() => handleJumpSection(sec.id)}
-            >
-              <span className="outline-num">{sec.number}</span>
-              <span className="outline-title">{sec.title}</span>
-            </button>
-          ))}
+          {activeChapter.sections.map((sec) => {
+            const hlSummary = computeSectionHighlightSummary(sec, state);
+            const activeTiers = SIDEBAR_TIER_PRIORITY.filter(
+              (tier) => hlSummary.countsByTier[tier] > 0,
+            );
+            const tooltip =
+              hlSummary.total > 0
+                ? activeTiers
+                    .map(
+                      (tier) =>
+                        `${hlSummary.countsByTier[tier]} ${LINE_HIGHLIGHT_META[tier].shortLabel}`,
+                    )
+                    .join(' · ')
+                : undefined;
+
+            return (
+              <button
+                key={sec.id}
+                type="button"
+                className={`outline-btn level-${sec.level}`}
+                title={tooltip ? `${sec.number} ${sec.title} (${tooltip})` : undefined}
+                onClick={() => handleJumpSection(sec.id)}
+              >
+                <span className="outline-num">{sec.number}</span>
+                <span className="outline-title">{sec.title}</span>
+                {hlSummary.total > 0 && (
+                  <span
+                    className="outline-hl-indicator"
+                    aria-label={`${hlSummary.total} highlighted lines in section`}
+                  >
+                    {activeTiers.map((tier) => (
+                      <span key={tier} className={`outline-hl-dot tier-${tier}`} />
+                    ))}
+                    <span className="outline-hl-count">{hlSummary.total}</span>
+                  </span>
+                )}
+              </button>
+            );
+          })}
           <button
             type="button"
             className="outline-btn level-1"
@@ -131,6 +176,10 @@ export function ChapterSidebar({ activeChapter }: { activeChapter: ChapterData }
         <div className="shortcut-hint-row">
           <span>Navigate lines</span>
           <span className="kbd-chip">J / K</span>
+        </div>
+        <div className="shortcut-hint-row">
+          <span>Highlight / Clear</span>
+          <span className="kbd-chip">H · 1–4 · 0</span>
         </div>
         <div className="shortcut-hint-row">
           <span>Master / Revise</span>

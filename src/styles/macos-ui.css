@@ -499,6 +499,7 @@
 
 .reader-filter-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
 }
@@ -630,8 +631,12 @@
   border-left: 2.5px solid var(--accent-amber);
 }
 
-.line-row-wrap.status-mastered .line-text-content {
+.line-row-wrap.status-mastered:not(.has-highlight) .line-text-content {
   opacity: 0.72;
+}
+
+.line-row-wrap.status-mastered.has-highlight .line-text-content {
+  opacity: 0.96;
 }
 
 .line-row {
@@ -1898,3 +1903,262 @@
   background: rgba(255, 255, 255, 0.06);
   border-color: var(--border-hairline);
 }
+
+/* =========================================================
+   4-Tier Apple Books–Style Line Highlights & Study Controls
+   ========================================================= */
+
+.line-marker {
+  display: inline;
+  padding: 1.5px 4px;
+  margin: 0 -2px;
+  border-radius: 4px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  transition: background 120ms ease, box-shadow 120ms ease;
+}
+
+.line-marker.hl-important {
+  background: var(--hl-important-mark);
+  box-shadow: inset 0 -1.5px 0 var(--hl-important-underline);
+}
+
+.line-marker.hl-volatile {
+  background: var(--hl-volatile-mark);
+  box-shadow: inset 0 -1.5px 0 var(--hl-volatile-underline);
+}
+
+.line-marker.hl-trap {
+  background: var(--hl-trap-mark);
+  box-shadow: inset 0 -1.5px 0 var(--hl-trap-underline);
+}
+
+.line-marker.hl-pyq {
+  background: var(--hl-pyq-mark);
+  box-shadow: inset 0 -1.5px 0 var(--hl-pyq-underline);
+}
+
+/* Keep unrevealed Cloze blanks clearly opaque over any marker tint */
+.line-marker .cloze-blank {
+  background: rgba(18, 19, 22, 0.86);
+  border-color: rgba(64, 200, 224, 0.55);
+}
+
+.line-marker .cloze-blank.revealed {
+  background: rgba(18, 19, 22, 0.72);
+}
+
+/* Inline 4-dot color swatch bar */
+.highlight-swatch-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 5px;
+  margin-right: 3px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--border-hairline);
+}
+
+.highlight-dot-btn {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  transition: transform 110ms ease, box-shadow 110ms ease, border-color 110ms ease;
+}
+
+.highlight-dot-btn:hover {
+  transform: scale(1.18);
+  border-color: rgba(255, 255, 255, 0.65);
+}
+
+.highlight-dot-btn.tier-important { background: var(--hl-important); }
+.highlight-dot-btn.tier-volatile { background: var(--hl-volatile); }
+.highlight-dot-btn.tier-trap { background: var(--hl-trap); }
+.highlight-dot-btn.tier-pyq { background: var(--hl-pyq); }
+
+.highlight-dot-btn.active {
+  border-color: #ffffff;
+  transform: scale(1.12);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+.highlight-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  transition: background 110ms ease, color 110ms ease;
+}
+
+.highlight-clear-btn:hover {
+  background: rgba(255, 69, 58, 0.24);
+  color: #ff9c96;
+}
+
+/* Tier & Dismissible Micro Badges */
+.micro-badge.hl-tier-important {
+  background: var(--hl-important-soft);
+  color: var(--hl-important-text);
+}
+
+.micro-badge.hl-tier-volatile {
+  background: var(--hl-volatile-soft);
+  color: var(--hl-volatile-text);
+}
+
+.micro-badge.hl-tier-trap {
+  background: var(--hl-trap-soft);
+  color: var(--hl-trap-text);
+}
+
+.micro-badge.hl-tier-pyq {
+  background: var(--hl-pyq-soft);
+  color: var(--hl-pyq-text);
+}
+
+.tier-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.tier-dot.tier-important { background: var(--hl-important); }
+.tier-dot.tier-volatile { background: var(--hl-volatile); }
+.tier-dot.tier-trap { background: var(--hl-trap); }
+.tier-dot.tier-pyq { background: var(--hl-pyq); }
+
+.micro-badge-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 2px;
+  margin-right: -2px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  opacity: 0.65;
+  transition: opacity 100ms ease, background 100ms ease;
+}
+
+.micro-badge-dismiss:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* Tier-colored active filter pills */
+.filter-pill.hl-filter-important.active {
+  background: var(--hl-important-soft);
+  border-color: rgba(255, 214, 10, 0.42);
+  color: var(--hl-important-text);
+}
+
+.filter-pill.hl-filter-volatile.active {
+  background: var(--hl-volatile-soft);
+  border-color: rgba(255, 122, 26, 0.45);
+  color: var(--hl-volatile-text);
+}
+
+.filter-pill.hl-filter-trap.active {
+  background: var(--hl-trap-soft);
+  border-color: rgba(255, 69, 58, 0.48);
+  color: var(--hl-trap-text);
+}
+
+.filter-pill.hl-filter-pyq.active {
+  background: var(--hl-pyq-soft);
+  border-color: rgba(64, 200, 224, 0.45);
+  color: var(--hl-pyq-text);
+}
+
+/* Toolbar Cloze Scope pill */
+.cloze-control-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.cloze-scope-select {
+  height: 30px;
+  padding: 0 7px;
+  border-radius: 7px;
+  border: 1px solid rgba(64, 200, 224, 0.28);
+  background: var(--accent-teal-soft);
+  color: var(--accent-teal);
+  font-size: 11.5px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+}
+
+.cloze-scope-select option {
+  background: #1f2229;
+  color: var(--text-primary);
+}
+
+/* Sidebar Section Highlight Indicator */
+.outline-btn {
+  align-items: center;
+}
+
+.outline-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.outline-hl-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  padding-left: 4px;
+  flex-shrink: 0;
+}
+
+.outline-hl-dot {
+  width: 5.5px;
+  height: 5.5px;
+  border-radius: 50%;
+}
+
+.outline-hl-dot.tier-important { background: var(--hl-important); }
+.outline-hl-dot.tier-volatile { background: var(--hl-volatile); }
+.outline-hl-dot.tier-trap { background: var(--hl-trap); }
+.outline-hl-dot.tier-pyq { background: var(--hl-pyq); }
+
+.outline-hl-count {
+  font-family: var(--font-mono);
+  font-size: 9.8px;
+  color: var(--text-tertiary);
+  margin-left: 1px;
+}
+
+/* Command Palette Cross-Chapter Highlight Filter Strip */
+.spotlight-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border-hairline);
+  background: rgba(255, 255, 255, 0.018);
+}
+

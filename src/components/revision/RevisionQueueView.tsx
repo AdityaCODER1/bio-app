@@ -6,10 +6,20 @@ import {
   Edit3,
   RotateCcw,
   Trash2,
+  X,
 } from 'lucide-react';
 import { useStudy } from '../../state/studyStore';
-import type { ChapterData, SavedMcq } from '../../types/study';
-import { computeChapterStats, getAllChapterLines } from '../../utils/chapterMetrics';
+import {
+  LINE_HIGHLIGHT_META,
+  LINE_HIGHLIGHT_ORDER,
+  type ChapterData,
+  type SavedMcq,
+} from '../../types/study';
+import {
+  computeChapterStats,
+  getAllChapterLines,
+  isClozeActiveForLine,
+} from '../../utils/chapterMetrics';
 import { ClozeText } from '../reader/ClozeText';
 
 type QueueFilter = 'all' | 'lines' | 'custom_lines' | 'notes' | 'mcqs';
@@ -129,6 +139,8 @@ export function RevisionQueueView({ chapter }: { chapter: ChapterData }) {
     state,
     config,
     setLineMastery,
+    setLineHighlight,
+    toggleLineHighlight,
     updateCustomLine,
     deleteCustomLine,
     updateNote,
@@ -151,8 +163,18 @@ export function RevisionQueueView({ chapter }: { chapter: ChapterData }) {
   const stats = useMemo(() => computeChapterStats(chapter, state), [chapter, state]);
 
   const flaggedLines = useMemo(
-    () => allLines.filter(({ line }) => state.lineMastery[line.id] === 'review'),
-    [allLines, state.lineMastery],
+    () =>
+      allLines
+        .filter(({ line }) => state.lineMastery[line.id] === 'review')
+        .sort((a, b) => {
+          const tierA = state.lineHighlights[a.line.id];
+          const tierB = state.lineHighlights[b.line.id];
+          const pA = tierA ? LINE_HIGHLIGHT_META[tierA].priority : 0;
+          const pB = tierB ? LINE_HIGHLIGHT_META[tierB].priority : 0;
+          if (pB !== pA) return pB - pA;
+          return a.line.lineNumber - b.line.lineNumber;
+        }),
+    [allLines, state.lineHighlights, state.lineMastery],
   );
 
   const unmasteredCustomLines = useMemo(() => {
@@ -290,50 +312,115 @@ export function RevisionQueueView({ chapter }: { chapter: ChapterData }) {
       ) : (
         <>
           {(filter === 'all' || filter === 'lines') &&
-            flaggedLines.map(({ line, section }) => (
-              <div key={line.id} className="revise-item-card">
-                <div className="revise-item-top">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                    <span className="revise-type-chip line">
-                      NCERT LINE #{line.lineNumber}
-                    </span>
-                    <span className="micro-badge">
-                      {section.number} · p.{line.ncertPage}
-                    </span>
+            flaggedLines.map(({ line, section }) => {
+              const highlight = state.lineHighlights[line.id];
+              const clozeEnabledForLine = isClozeActiveForLine(
+                config.clozeMode,
+                config.clozeScope,
+                highlight,
+              );
+              return (
+                <div key={line.id} className="revise-item-card">
+                  <div className="revise-item-top">
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 7 }}>
+                      <span className="revise-type-chip line">
+                        NCERT LINE #{line.lineNumber}
+                      </span>
+                      <span className="micro-badge">
+                        {section.number} · p.{line.ncertPage}
+                      </span>
+                      {highlight && (
+                        <span className={`micro-badge hl-tier-${highlight}`}>
+                          <span className={`tier-dot tier-${highlight}`} aria-hidden="true" />
+                          <span>{LINE_HIGHLIGHT_META[highlight].label}</span>
+                          <button
+                            type="button"
+                            className="micro-badge-dismiss"
+                            title="Remove highlight"
+                            aria-label={`Remove ${LINE_HIGHLIGHT_META[highlight].label} highlight`}
+                            onClick={() => setLineHighlight(line.id, null)}
+                          >
+                            <X size={10} />
+                          </button>
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div className="highlight-swatch-bar" role="group" aria-label="Line highlight tier">
+                        {LINE_HIGHLIGHT_ORDER.map((tier) => {
+                          const meta = LINE_HIGHLIGHT_META[tier];
+                          const isActive = highlight === tier;
+                          return (
+                            <button
+                              key={tier}
+                              type="button"
+                              className={`highlight-dot-btn tier-${tier} ${isActive ? 'active' : ''}`}
+                              title={
+                                isActive
+                                  ? `Remove ${meta.label} highlight`
+                                  : `Highlight as ${meta.label} — ${meta.description}`
+                              }
+                              aria-label={`${isActive ? 'Remove' : 'Set'} ${meta.label} highlight`}
+                              aria-pressed={isActive}
+                              onClick={() => toggleLineHighlight(line.id, tier)}
+                            />
+                          );
+                        })}
+                        {highlight && (
+                          <button
+                            type="button"
+                            className="highlight-clear-btn"
+                            title="Clear highlight"
+                            aria-label="Clear highlight"
+                            onClick={() => setLineHighlight(line.id, null)}
+                          >
+                            <X size={10} />
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        className="btn-ghost"
+                        onClick={() => jumpToLine(chapter.id, line.id)}
+                      >
+                        <ArrowUpRight size={13} /> Open in Reader
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        style={{ color: 'var(--accent-green)' }}
+                        onClick={() => setLineMastery(line.id, 'mastered')}
+                      >
+                        <Check size={13} /> Mark Mastered
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button
-                      type="button"
-                      className="btn-ghost"
-                      onClick={() => jumpToLine(chapter.id, line.id)}
-                    >
-                      <ArrowUpRight size={13} /> Open in Reader
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      style={{ color: 'var(--accent-green)' }}
-                      onClick={() => setLineMastery(line.id, 'mastered')}
-                    >
-                      <Check size={13} /> Mark Mastered
-                    </button>
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-serif)',
+                      fontSize: 16.5,
+                      lineHeight: 1.65,
+                    }}
+                  >
+                    {highlight ? (
+                      <span className={`line-marker hl-${highlight}`}>
+                        <ClozeText
+                          text={line.text}
+                          clozeTerms={line.clozeTerms}
+                          enabled={clozeEnabledForLine}
+                        />
+                      </span>
+                    ) : (
+                      <ClozeText
+                        text={line.text}
+                        clozeTerms={line.clozeTerms}
+                        enabled={clozeEnabledForLine}
+                      />
+                    )}
                   </div>
                 </div>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-serif)',
-                    fontSize: 16.5,
-                    lineHeight: 1.65,
-                  }}
-                >
-                  <ClozeText
-                    text={line.text}
-                    clozeTerms={line.clozeTerms}
-                    enabled={config.clozeMode}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
 
           {(filter === 'all' || filter === 'custom_lines') &&
             unmasteredCustomLines.map(({ parentLineId, item }) => {

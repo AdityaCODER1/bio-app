@@ -2,6 +2,8 @@ import type {
   ChapterData,
   ChapterDiagram,
   ChapterSection,
+  ClozeScope,
+  LineHighlightTier,
   MasteryStatus,
   NcertLine,
   StudyState,
@@ -42,11 +44,61 @@ export function getResolvedVaultItems(chapter: ChapterData, state: StudyState): 
   return [...baseItems, ...customItems];
 }
 
+export function createEmptyHighlightCounts(): Record<LineHighlightTier, number> {
+  return {
+    important: 0,
+    volatile: 0,
+    trap: 0,
+    pyq: 0,
+  };
+}
+
+export interface SectionHighlightSummary {
+  total: number;
+  countsByTier: Record<LineHighlightTier, number>;
+}
+
+export function computeSectionHighlightSummary(
+  section: ChapterSection,
+  state: StudyState,
+): SectionHighlightSummary {
+  const countsByTier = createEmptyHighlightCounts();
+  let total = 0;
+
+  for (const block of section.blocks) {
+    if (block.type === 'paragraph' || block.type === 'callout') {
+      for (const line of block.lines) {
+        const tier = state.lineHighlights[line.id];
+        if (tier) {
+          countsByTier[tier]++;
+          total++;
+        }
+      }
+    }
+  }
+
+  return { total, countsByTier };
+}
+
+export function isClozeActiveForLine(
+  clozeMode: boolean,
+  clozeScope: ClozeScope,
+  highlightTier?: LineHighlightTier,
+): boolean {
+  if (!clozeMode) return false;
+  if (clozeScope === 'all') return true;
+  if (clozeScope === 'highlighted') return Boolean(highlightTier);
+  return highlightTier === 'volatile' || highlightTier === 'trap';
+}
+
 export interface ChapterProgressStats {
   totalLines: number;
   masteredLines: number;
   reviewLines: number;
   unreadLines: number;
+  highlightedLines: number;
+  highlightCountsByTier: Record<LineHighlightTier, number>;
+  dismissedHighYieldCount: number;
   customLineCount: number;
   unmasteredCustomLines: number;
   noteCount: number;
@@ -67,6 +119,10 @@ export function computeChapterStats(
   let masteredLines = 0;
   let reviewLines = 0;
   let unreadLines = 0;
+  let highlightedLines = 0;
+  let dismissedHighYieldCount = 0;
+  const highlightCountsByTier = createEmptyHighlightCounts();
+  const dismissedSet = new Set(state.dismissedHighYieldIds);
 
   let customLineCount = 0;
   let unmasteredCustomLines = 0;
@@ -83,6 +139,16 @@ export function computeChapterStats(
     if (status === 'mastered') masteredLines++;
     else if (status === 'review') reviewLines++;
     else unreadLines++;
+
+    const tier = state.lineHighlights[line.id];
+    if (tier) {
+      highlightedLines++;
+      highlightCountsByTier[tier]++;
+    }
+
+    if (line.isHighYield && dismissedSet.has(line.id)) {
+      dismissedHighYieldCount++;
+    }
 
     const cLines = state.customLines[line.id] ?? [];
     customLineCount += cLines.length;
@@ -120,6 +186,9 @@ export function computeChapterStats(
     masteredLines,
     reviewLines,
     unreadLines,
+    highlightedLines,
+    highlightCountsByTier,
+    dismissedHighYieldCount,
     customLineCount,
     unmasteredCustomLines,
     noteCount,

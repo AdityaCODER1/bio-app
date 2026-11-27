@@ -10,6 +10,7 @@ import { RevisionQueueView } from './components/revision/RevisionQueueView';
 import { ChapterSidebar } from './components/sidebar/ChapterSidebar';
 import { ChapterVaultView } from './components/vault/ChapterVaultView';
 import { StudyProvider, useStudy } from './state/studyStore';
+import { LINE_HIGHLIGHT_ORDER } from './types/study';
 import { computeChapterStats, getAllChapterLines } from './utils/chapterMetrics';
 
 function StudyWorkspace() {
@@ -22,6 +23,9 @@ function StudyWorkspace() {
     activeSelection,
     selectLine,
     setLineMastery,
+    setLineHighlight,
+    toggleLineHighlight,
+    cycleLineHighlight,
     sidebarOpen,
     setSidebarOpen,
     inspectorOpen,
@@ -95,9 +99,11 @@ function StudyWorkspace() {
         return;
       }
 
-      if (isTyping || settingsOpen || searchOpen) return;
+      if (isTyping || settingsOpen || searchOpen || e.metaKey || e.ctrlKey || e.altKey) return;
 
-      if (e.key.toLowerCase() === 'c') {
+      const keyLower = e.key.toLowerCase();
+
+      if (keyLower === 'c') {
         e.preventDefault();
         updateConfig({ clozeMode: !config.clozeMode });
         return;
@@ -105,42 +111,62 @@ function StudyWorkspace() {
 
       if (activeMode !== 'read' || allLines.length === 0) return;
 
+      const visibleLineIds = Array.from(
+        centerPaneRef.current?.querySelectorAll<HTMLElement>('[data-line-id]') ?? [],
+      )
+        .map((el) => el.dataset.lineId)
+        .filter((id): id is string => Boolean(id));
+
+      const navLineIds =
+        visibleLineIds.length > 0 ? visibleLineIds : allLines.map((item) => item.line.id);
+
       const currentIdx =
-        activeSelection?.type === 'line'
-          ? allLines.findIndex((item) => item.line.id === activeSelection.id)
-          : 0;
+        activeSelection?.type === 'line' ? navLineIds.indexOf(activeSelection.id) : -1;
 
       if (e.key === 'j' || e.key === 'ArrowDown') {
         e.preventDefault();
-        const next = allLines[Math.min(allLines.length - 1, Math.max(0, currentIdx) + 1)];
-        if (next) {
-          selectLine(chapter.id, next.line.id);
+        const nextIdx =
+          currentIdx === -1 ? 0 : Math.min(navLineIds.length - 1, currentIdx + 1);
+        const nextId = navLineIds[nextIdx];
+        if (nextId) {
+          selectLine(chapter.id, nextId);
           document
-            .getElementById(`line-${next.line.id}`)
+            .getElementById(`line-${nextId}`)
             ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
       } else if (e.key === 'k' || e.key === 'ArrowUp') {
         e.preventDefault();
-        const prev = allLines[Math.max(0, currentIdx - 1)];
-        if (prev) {
-          selectLine(chapter.id, prev.line.id);
+        const prevIdx = currentIdx === -1 ? 0 : Math.max(0, currentIdx - 1);
+        const prevId = navLineIds[prevIdx];
+        if (prevId) {
+          selectLine(chapter.id, prevId);
           document
-            .getElementById(`line-${prev.line.id}`)
+            .getElementById(`line-${prevId}`)
             ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
       } else if (activeSelection?.type === 'line') {
         const lineId = activeSelection.id;
         const currentStatus = state.lineMastery[lineId] ?? 'unread';
-        if (e.key.toLowerCase() === 'm') {
+        if (keyLower === 'm') {
           e.preventDefault();
           setLineMastery(lineId, currentStatus === 'mastered' ? 'unread' : 'mastered');
-        } else if (e.key.toLowerCase() === 'r') {
+        } else if (keyLower === 'r') {
           e.preventDefault();
           setLineMastery(lineId, currentStatus === 'review' ? 'unread' : 'review');
-        } else if (e.key.toLowerCase() === 'q') {
+        } else if (keyLower === 'h') {
+          e.preventDefault();
+          cycleLineHighlight(lineId);
+        } else if (e.key === '1' || e.key === '2' || e.key === '3' || e.key === '4') {
+          e.preventDefault();
+          const tier = LINE_HIGHLIGHT_ORDER[Number(e.key) - 1];
+          if (tier) toggleLineHighlight(lineId, tier);
+        } else if (e.key === '0') {
+          e.preventDefault();
+          setLineHighlight(lineId, null);
+        } else if (keyLower === 'q') {
           e.preventDefault();
           selectLine(chapter.id, lineId, 'mcq');
-        } else if (e.key.toLowerCase() === 'p') {
+        } else if (keyLower === 'p') {
           e.preventDefault();
           selectLine(chapter.id, lineId, 'pdf');
         }
@@ -155,12 +181,15 @@ function StudyWorkspace() {
     allLines,
     chapter.id,
     config.clozeMode,
+    cycleLineHighlight,
     searchOpen,
     selectLine,
+    setLineHighlight,
     setLineMastery,
     setSidebarOpen,
     settingsOpen,
     state.lineMastery,
+    toggleLineHighlight,
     updateConfig,
   ]);
 

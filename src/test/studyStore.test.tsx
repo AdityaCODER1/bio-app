@@ -1,10 +1,16 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { CommandPaletteModal } from '../components/modals/CommandPaletteModal';
+import { LineReaderView } from '../components/reader/LineReaderView';
 import { CHAPTERS } from '../data/chapters';
-import { createEmptyStudyState } from '../services/persistence';
+import { createEmptyStudyState, normalizeStudyState } from '../services/persistence';
+import { StudyProvider, useStudy } from '../state/studyStore';
 import {
   computeChapterStats,
+  computeSectionHighlightSummary,
   getAllChapterLines,
   getResolvedVaultItems,
+  isClozeActiveForLine,
 } from '../utils/chapterMetrics';
 import { parseInlineClozeSyntax, splitClozeSegments } from '../utils/cloze';
 
@@ -25,10 +31,25 @@ describe('Cloze active recall utilities', () => {
     expect(res.cleanText).toBe('Remember: Malonate competitively inhibits succinic dehydrogenase.');
     expect(res.clozeTerms).toEqual(['Malonate', 'succinic dehydrogenase']);
   });
+
+  it('evaluates selective Cloze scope accurately for all, highlighted, and volatile_trap', () => {
+    expect(isClozeActiveForLine(false, 'all', 'trap')).toBe(false);
+    expect(isClozeActiveForLine(true, 'all', undefined)).toBe(true);
+
+    expect(isClozeActiveForLine(true, 'highlighted', undefined)).toBe(false);
+    expect(isClozeActiveForLine(true, 'highlighted', 'important')).toBe(true);
+    expect(isClozeActiveForLine(true, 'highlighted', 'pyq')).toBe(true);
+
+    expect(isClozeActiveForLine(true, 'volatile_trap', undefined)).toBe(false);
+    expect(isClozeActiveForLine(true, 'volatile_trap', 'important')).toBe(false);
+    expect(isClozeActiveForLine(true, 'volatile_trap', 'pyq')).toBe(false);
+    expect(isClozeActiveForLine(true, 'volatile_trap', 'volatile')).toBe(true);
+    expect(isClozeActiveForLine(true, 'volatile_trap', 'trap')).toBe(true);
+  });
 });
 
-describe('Chapter metrics, revision queue, and editable vault', () => {
-  it('computes mastery and Revise Until Mastered counts accurately', () => {
+describe('Chapter metrics, revision queue, highlights, and editable vault', () => {
+  it('computes mastery, highlight counts, section summaries, and Revise Until Mastered counts accurately', () => {
     const ch09 = CHAPTERS.find((c) => c.id === 'ch09')!;
     const lines = getAllChapterLines(ch09);
     expect(lines.length).toBeGreaterThan(250);
@@ -36,6 +57,10 @@ describe('Chapter metrics, revision queue, and editable vault', () => {
     const state = createEmptyStudyState();
     state.lineMastery[lines[0].line.id] = 'mastered';
     state.lineMastery[lines[1].line.id] = 'review';
+    state.lineHighlights[lines[0].line.id] = 'important';
+    state.lineHighlights[lines[1].line.id] = 'trap';
+    state.lineHighlights[lines[2].line.id] = 'volatile';
+    state.lineHighlights[lines[3].line.id] = 'pyq';
     state.customLines[lines[1].line.id] = [
       {
         id: 'cl-1',
@@ -67,15 +92,38 @@ describe('Chapter metrics, revision queue, and editable vault', () => {
     const stats = computeChapterStats(ch09, state);
     expect(stats.masteredLines).toBe(1);
     expect(stats.reviewLines).toBe(1);
+    expect(stats.highlightedLines).toBe(4);
+    expect(stats.highlightCountsByTier).toEqual({
+      important: 1,
+      volatile: 1,
+      trap: 1,
+      pyq: 1,
+    });
     expect(stats.customLineCount).toBe(1);
     expect(stats.noteCount).toBe(1);
+    // Highlights remain strictly independent of revisionQueueCount
     expect(stats.revisionQueueCount).toBe(3);
+
+    const firstSectionSummary = computeSectionHighlightSummary(ch09.sections[0], state);
+    expect(firstSectionSummary.total).toBeGreaterThan(0);
 
     // Graduate custom line & note -> revision queue drops to 1
     state.customLines[lines[1].line.id][0].status = 'mastered';
     state.lineNotes[lines[1].line.id][0].status = 'mastered';
     const updated = computeChapterStats(ch09, state);
     expect(updated.revisionQueueCount).toBe(1);
+  });
+
+  it('normalizes legacy study-state snapshots missing lineHighlights and dismissedHighYieldIds', () => {
+    const legacy = {
+      version: 1,
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      lineMastery: { 'ch08-l001': 'mastered' as const },
+    };
+    const normalized = normalizeStudyState(legacy);
+    expect(normalized.lineMastery['ch08-l001']).toBe('mastered');
+    expect(normalized.lineHighlights).toEqual({});
+    expect(normalized.dismissedHighYieldIds).toEqual([]);
   });
 
   it('supports adding, editing, and deleting End-of-Chapter Vault facts', () => {
@@ -101,5 +149,132 @@ describe('Chapter metrics, revision queue, and editable vault', () => {
     expect(resolved.some((v) => v.id === firstId)).toBe(false);
     expect(resolved.find((v) => v.id === ch10.vault[1].id)?.prompt).toBe('Updated Prompt');
     expect(resolved.some((v) => v.id === 'vault-custom-1')).toBe(true);
+  });
+});
+
+describe('Interactive 4-tier highlighting, preset High-Yield controls, and ⌘K highlight browser', () => {
+  it('supports setting, cycling, toggling, clearing highlights, reader filtering, Revision Queue priority, and ⌘K browsing', async () => {
+    const ch08 = CHAPTERS[0];
+    const realLines = getAllChapterLines(ch08);
+    const highYieldLine = realLines.find((l) => l.line.isHighYield)!.line;
+    const secondLine = realLines.find((l) => l.line.id !== highYieldLine.id)!.line;
+
+    // Build a compact 2-line slice of Ch 8 for fast deterministic DOM rendering
+    const miniChapter = {
+      ...ch08,
+      diagrams: [],
+      vault: [],
+      sections: [
+        {
+          id: 'sec-test-1',
+          number: '8.1',
+          title: 'Test Section',
+          level: 1 as const,
+          blocks: [
+            {
+              type: 'paragraph' as const,
+              id: 'p-test-1',
+              lines: [highYieldLine, secondLine],
+            },
+          ],
+        },
+      ],
+    };
+
+    function Harness() {
+      const study = useStudy();
+      return (
+        <div>
+          <div data-testid="sync-status">{study.syncStatus}</div>
+          <button type="button" onClick={() => study.cycleLineHighlight(highYieldLine.id)}>
+            cycle-hl
+          </button>
+          <button
+            type="button"
+            onClick={() => study.toggleLineHighlight(highYieldLine.id, 'trap')}
+          >
+            toggle-trap
+          </button>
+          <button
+            type="button"
+            onClick={() => study.setLineHighlight(highYieldLine.id, null)}
+          >
+            clear-hl
+          </button>
+          <button
+            type="button"
+            onClick={() => study.dismissPresetHighYield(highYieldLine.id)}
+          >
+            dismiss-hy
+          </button>
+          <button
+            type="button"
+            onClick={() => study.restorePresetHighYield(highYieldLine.id)}
+          >
+            restore-hy
+          </button>
+          <div data-testid="hl-value">{study.state.lineHighlights[highYieldLine.id] ?? 'none'}</div>
+          <div data-testid="hy-dismissed">
+            {study.state.dismissedHighYieldIds.includes(highYieldLine.id) ? 'yes' : 'no'}
+          </div>
+          <LineReaderView chapter={miniChapter} />
+          <CommandPaletteModal onClose={() => {}} />
+        </div>
+      );
+    }
+
+    render(
+      <StudyProvider initialChapterId={ch08.id}>
+        <Harness />
+      </StudyProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('sync-status').textContent).not.toBe('loading');
+    });
+
+    expect(screen.getByTestId('hl-value').textContent).toBe('none');
+
+    // Cycle: none -> important -> volatile -> trap -> pyq -> none
+    fireEvent.click(screen.getByText('cycle-hl'));
+    expect(screen.getByTestId('hl-value').textContent).toBe('important');
+    fireEvent.click(screen.getByText('cycle-hl'));
+    expect(screen.getByTestId('hl-value').textContent).toBe('volatile');
+    fireEvent.click(screen.getByText('cycle-hl'));
+    expect(screen.getByTestId('hl-value').textContent).toBe('trap');
+    fireEvent.click(screen.getByText('cycle-hl'));
+    expect(screen.getByTestId('hl-value').textContent).toBe('pyq');
+    fireEvent.click(screen.getByText('cycle-hl'));
+    expect(screen.getByTestId('hl-value').textContent).toBe('none');
+
+    // Toggle Trap on -> LineRow reflects highlight class and marker
+    fireEvent.click(screen.getByText('toggle-trap'));
+    expect(screen.getByTestId('hl-value').textContent).toBe('trap');
+
+    const lineEl = document.getElementById(`line-${highYieldLine.id}`);
+    expect(lineEl).toHaveClass('has-highlight', 'highlight-trap');
+
+    // Reader filter by Highlighted hides unhighlighted secondLine
+    fireEvent.click(screen.getByRole('button', { name: /^Highlighted \(1\)$/i }));
+    expect(document.getElementById(`line-${highYieldLine.id}`)).toBeInTheDocument();
+    expect(document.getElementById(`line-${secondLine.id}`)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /All Lines/i }));
+    expect(document.getElementById(`line-${secondLine.id}`)).toBeInTheDocument();
+
+    // Command Palette cross-chapter highlight browser lists the highlighted line
+    const allHlChip = screen.getByRole('button', { name: /All Highlighted \(1\)/i });
+    fireEvent.click(allHlChip);
+    expect(screen.getByText(new RegExp(`Line #${highYieldLine.lineNumber}`))).toBeInTheDocument();
+
+    // Toggle Trap again -> removes highlight
+    fireEvent.click(screen.getByText('toggle-trap'));
+    expect(screen.getByTestId('hl-value').textContent).toBe('none');
+    expect(document.getElementById(`line-${highYieldLine.id}`)).not.toHaveClass('has-highlight');
+
+    // Dismiss & restore preset High-Yield badge
+    fireEvent.click(screen.getByText('dismiss-hy'));
+    expect(screen.getByTestId('hy-dismissed').textContent).toBe('yes');
+    fireEvent.click(screen.getByText('restore-hy'));
+    expect(screen.getByTestId('hy-dismissed').textContent).toBe('no');
   });
 });

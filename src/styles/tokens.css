@@ -41,6 +41,31 @@
   --accent-teal: #40c8e0;
   --accent-teal-soft: rgba(64, 200, 224, 0.13);
 
+  /* 4-Tier Apple Books–Style Line Highlights */
+  --hl-important: #ffd60a;
+  --hl-important-mark: rgba(255, 214, 10, 0.17);
+  --hl-important-underline: rgba(255, 214, 10, 0.44);
+  --hl-important-soft: rgba(255, 214, 10, 0.14);
+  --hl-important-text: #ffe35c;
+
+  --hl-volatile: #ff7a1a;
+  --hl-volatile-mark: rgba(255, 122, 26, 0.2);
+  --hl-volatile-underline: rgba(255, 122, 26, 0.48);
+  --hl-volatile-soft: rgba(255, 122, 26, 0.15);
+  --hl-volatile-text: #ffa259;
+
+  --hl-trap: #ff453a;
+  --hl-trap-mark: rgba(255, 69, 58, 0.21);
+  --hl-trap-underline: rgba(255, 69, 58, 0.5);
+  --hl-trap-soft: rgba(255, 69, 58, 0.16);
+  --hl-trap-text: #ff7b73;
+
+  --hl-pyq: #40c8e0;
+  --hl-pyq-mark: rgba(64, 200, 224, 0.18);
+  --hl-pyq-underline: rgba(64, 200, 224, 0.46);
+  --hl-pyq-soft: rgba(64, 200, 224, 0.14);
+  --hl-pyq-text: #6cd9ed;
+
   /* Typography */
   --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
   --font-serif: "Newsreader", Georgia, "Times New Roman", serif;

@@ -72,6 +72,57 @@ export const GEMINI_MODEL_PRESETS: GeminiModelPreset[] = [
 
 export type MasteryStatus = 'unread' | 'review' | 'mastered';
 
+export type LineHighlightTier = 'important' | 'volatile' | 'trap' | 'pyq';
+
+export const LINE_HIGHLIGHT_ORDER: LineHighlightTier[] = [
+  'important',
+  'volatile',
+  'trap',
+  'pyq',
+];
+
+export const LINE_HIGHLIGHT_META: Record<
+  LineHighlightTier,
+  {
+    label: string;
+    shortLabel: string;
+    shortcutKey: '1' | '2' | '3' | '4';
+    description: string;
+    priority: number;
+  }
+> = {
+  important: {
+    label: 'Important',
+    shortLabel: 'Important',
+    shortcutKey: '1',
+    description: 'Core NCERT sentence worth skimming before exams',
+    priority: 1,
+  },
+  volatile: {
+    label: 'Volatile',
+    shortLabel: 'Volatile',
+    shortcutKey: '2',
+    description: 'Hard to remember — numbers, dates, examples, or terms that slip easily',
+    priority: 3,
+  },
+  trap: {
+    label: 'Critical / Trap',
+    shortLabel: 'Trap',
+    shortcutKey: '3',
+    description: 'Subtle NCERT word-trap, exception, or mock-test mistake',
+    priority: 4,
+  },
+  pyq: {
+    label: 'PYQ / Must-Know',
+    shortLabel: 'PYQ',
+    shortcutKey: '4',
+    description: 'Frequently tested NEET PYQ statement',
+    priority: 2,
+  },
+};
+
+export type ClozeScope = 'all' | 'highlighted' | 'volatile_trap';
+
 export type NoteTag = 'PYQ' | 'Trap' | 'Exception' | 'Mnemonic' | 'Concept';
 
 export const NOTE_TAGS: NoteTag[] = ['PYQ', 'Trap', 'Exception', 'Mnemonic', 'Concept'];
@@ -323,6 +374,8 @@ export interface StudyState {
   version: number;
   updatedAt: string;
   lineMastery: Record<string, MasteryStatus>;
+  lineHighlights: Record<string, LineHighlightTier>;
+  dismissedHighYieldIds: string[];
   customLines: Record<string, CustomUserLine[]>;
   lineNotes: Record<string, UserNote[]>;
   pinnedMcqs: Record<string, SavedMcq[]>;
@@ -343,6 +396,8 @@ export interface LocalAppConfig {
   readerFont: 'serif' | 'sans';
   fontSize: 'compact' | 'comfortable' | 'large';
   clozeMode: boolean;
+  clozeScope: ClozeScope;
+  showPresetHighYield: boolean;
   showOnlyUnmastered: boolean;
   showPdfDarkFilter: boolean;
 }
