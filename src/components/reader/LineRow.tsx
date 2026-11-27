@@ -6,7 +6,6 @@ import {
   Flag,
   HelpCircle,
   Plus,
-  RotateCcw,
   Sparkles,
   Trash2,
   X,
@@ -38,8 +37,6 @@ export function LineRow({ chapterId, line }: LineRowProps) {
     setLineMastery,
     setLineHighlight,
     toggleLineHighlight,
-    dismissPresetHighYield,
-    restorePresetHighYield,
     addCustomLine,
     updateCustomLine,
     deleteCustomLine,
@@ -60,11 +57,6 @@ export function LineRow({ chapterId, line }: LineRowProps) {
   const isSelected = activeSelection?.type === 'line' && activeSelection.id === line.id;
   const status = state.lineMastery[line.id] ?? 'unread';
   const highlight = state.lineHighlights[line.id];
-  const isHighYieldDismissed = state.dismissedHighYieldIds.includes(line.id);
-  const showHighYieldBadge =
-    Boolean(line.isHighYield) && config.showPresetHighYield && !isHighYieldDismissed;
-  const canRestoreHighYield =
-    Boolean(line.isHighYield) && config.showPresetHighYield && isHighYieldDismissed;
 
   const customLines = state.customLines[line.id] ?? [];
   const notes = state.lineNotes[line.id] ?? [];
@@ -120,7 +112,7 @@ export function LineRow({ chapterId, line }: LineRowProps) {
   const hasAnnotations = customLines.length > 0 || notes.length > 0 || composerMode !== 'none';
   const hasBadges =
     Boolean(highlight) ||
-    showHighYieldBadge ||
+    Boolean(line.isHighYield) ||
     customLines.length > 0 ||
     notes.length > 0 ||
     pinnedMcqs.length > 0;
@@ -196,23 +188,7 @@ export function LineRow({ chapterId, line }: LineRowProps) {
                   </button>
                 </span>
               )}
-              {showHighYieldBadge && (
-                <span className="micro-badge high-yield">
-                  <span>High-Yield</span>
-                  <button
-                    type="button"
-                    className="micro-badge-dismiss"
-                    title="Dismiss preset High-Yield badge on this line"
-                    aria-label="Dismiss preset High-Yield badge"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      dismissPresetHighYield(line.id);
-                    }}
-                  >
-                    <X size={10} />
-                  </button>
-                </span>
-              )}
+              {line.isHighYield && <span className="micro-badge high-yield">High-Yield</span>}
               {customLines.length > 0 && (
                 <span className="micro-badge has-notes">
                   +{customLines.length} custom line{customLines.length > 1 ? 's' : ''}
@@ -273,17 +249,6 @@ export function LineRow({ chapterId, line }: LineRowProps) {
               </button>
             )}
           </div>
-          {canRestoreHighYield && (
-            <button
-              type="button"
-              className="mini-action-btn"
-              title="Restore preset High-Yield badge"
-              aria-label="Restore preset High-Yield badge"
-              onClick={() => restorePresetHighYield(line.id)}
-            >
-              <RotateCcw size={12} />
-            </button>
-          )}
           <button
             type="button"
             className={`mini-action-btn ${status === 'mastered' ? 'active' : ''}`}

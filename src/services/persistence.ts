@@ -27,7 +27,6 @@ export function createEmptyStudyState(): StudyState {
     updatedAt: new Date().toISOString(),
     lineMastery: {},
     lineHighlights: {},
-    dismissedHighYieldIds: [],
     customLines: {},
     lineNotes: {},
     pinnedMcqs: {},
@@ -50,9 +49,6 @@ export function normalizeStudyState(raw?: Partial<StudyState> | null): StudyStat
     lineMastery: raw.lineMastery && typeof raw.lineMastery === 'object' ? raw.lineMastery : {},
     lineHighlights:
       raw.lineHighlights && typeof raw.lineHighlights === 'object' ? raw.lineHighlights : {},
-    dismissedHighYieldIds: Array.isArray(raw.dismissedHighYieldIds)
-      ? raw.dismissedHighYieldIds
-      : [],
     customLines: raw.customLines && typeof raw.customLines === 'object' ? raw.customLines : {},
     lineNotes: raw.lineNotes && typeof raw.lineNotes === 'object' ? raw.lineNotes : {},
     pinnedMcqs: raw.pinnedMcqs && typeof raw.pinnedMcqs === 'object' ? raw.pinnedMcqs : {},
@@ -81,7 +77,6 @@ export function createDefaultConfig(): LocalAppConfig {
     fontSize: 'comfortable',
     clozeMode: false,
     clozeScope: 'all',
-    showPresetHighYield: true,
     showOnlyUnmastered: false,
     showPdfDarkFilter: false,
   };

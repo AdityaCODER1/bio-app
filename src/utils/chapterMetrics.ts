@@ -98,7 +98,6 @@ export interface ChapterProgressStats {
   unreadLines: number;
   highlightedLines: number;
   highlightCountsByTier: Record<LineHighlightTier, number>;
-  dismissedHighYieldCount: number;
   customLineCount: number;
   unmasteredCustomLines: number;
   noteCount: number;
@@ -120,9 +119,7 @@ export function computeChapterStats(
   let reviewLines = 0;
   let unreadLines = 0;
   let highlightedLines = 0;
-  let dismissedHighYieldCount = 0;
   const highlightCountsByTier = createEmptyHighlightCounts();
-  const dismissedSet = new Set(state.dismissedHighYieldIds);
 
   let customLineCount = 0;
   let unmasteredCustomLines = 0;
@@ -144,10 +141,6 @@ export function computeChapterStats(
     if (tier) {
       highlightedLines++;
       highlightCountsByTier[tier]++;
-    }
-
-    if (line.isHighYield && dismissedSet.has(line.id)) {
-      dismissedHighYieldCount++;
     }
 
     const cLines = state.customLines[line.id] ?? [];
@@ -188,7 +181,6 @@ export function computeChapterStats(
     unreadLines,
     highlightedLines,
     highlightCountsByTier,
-    dismissedHighYieldCount,
     customLineCount,
     unmasteredCustomLines,
     noteCount,

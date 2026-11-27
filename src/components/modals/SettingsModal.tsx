@@ -4,7 +4,6 @@ import {
   Download,
   KeyRound,
   Loader2,
-  RotateCcw,
   Upload,
   X,
 } from 'lucide-react';
@@ -14,11 +13,9 @@ import { GEMINI_MODEL_PRESETS, type ClozeScope } from '../../types/study';
 
 export function SettingsModal({ onClose }: { onClose: () => void }) {
   const {
-    state,
     config,
     effectiveModelId,
     updateConfig,
-    restoreAllPresetHighYield,
     diskSyncAvailable,
     exportBackup,
     importBackupJson,
@@ -223,66 +220,29 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          {/* Highlights & Active Recall Preferences */}
+          {/* Active Recall Preferences */}
           <div className="field-group">
-            <div className="field-label">Highlights & Active Recall Preferences</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div>
-                <div className="field-help" style={{ marginBottom: 5 }}>
-                  Cloze Mode Scope — choose which sentences are masked when Active Recall Cloze Mode (<code>C</code>) is turned on:
-                </div>
-                <div className="segmented-control">
-                  {(
-                    [
-                      { id: 'all', label: 'All Lines' },
-                      { id: 'highlighted', label: 'Highlighted Only' },
-                      { id: 'volatile_trap', label: 'Volatile & Trap Only' },
-                    ] as Array<{ id: ClozeScope; label: string }>
-                  ).map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      className={`segmented-btn ${config.clozeScope === opt.id ? 'active' : ''}`}
-                      onClick={() => updateConfig({ clozeScope: opt.id })}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 8,
-                }}
-              >
-                <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5 }}>
-                  <input
-                    type="checkbox"
-                    checked={config.showPresetHighYield}
-                    onChange={(e) =>
-                      updateConfig({ showPresetHighYield: e.target.checked })
-                    }
-                  />
-                  Show preset NCERT High-Yield badges in Reader
-                </label>
-
-                {state.dismissedHighYieldIds.length > 0 && (
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => restoreAllPresetHighYield()}
-                  >
-                    <RotateCcw size={12.5} />
-                    Restore {state.dismissedHighYieldIds.length} Dismissed Badge
-                    {state.dismissedHighYieldIds.length > 1 ? 's' : ''}
-                  </button>
-                )}
-              </div>
+            <div className="field-label">Active Recall Preferences</div>
+            <div className="field-help">
+              Cloze Mode Scope — choose which sentences are masked when Active Recall Cloze Mode (<code>C</code>) is turned on:
+            </div>
+            <div className="segmented-control">
+              {(
+                [
+                  { id: 'all', label: 'All Lines' },
+                  { id: 'highlighted', label: 'Highlighted Only' },
+                  { id: 'volatile_trap', label: 'Volatile & Trap Only' },
+                ] as Array<{ id: ClozeScope; label: string }>
+              ).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  className={`segmented-btn ${config.clozeScope === opt.id ? 'active' : ''}`}
+                  onClick={() => updateConfig({ clozeScope: opt.id })}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
 

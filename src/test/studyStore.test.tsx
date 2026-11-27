@@ -114,7 +114,7 @@ describe('Chapter metrics, revision queue, highlights, and editable vault', () =
     expect(updated.revisionQueueCount).toBe(1);
   });
 
-  it('normalizes legacy study-state snapshots missing lineHighlights and dismissedHighYieldIds', () => {
+  it('normalizes legacy study-state snapshots missing lineHighlights', () => {
     const legacy = {
       version: 1,
       updatedAt: '2026-01-01T00:00:00.000Z',
@@ -123,7 +123,6 @@ describe('Chapter metrics, revision queue, highlights, and editable vault', () =
     const normalized = normalizeStudyState(legacy);
     expect(normalized.lineMastery['ch08-l001']).toBe('mastered');
     expect(normalized.lineHighlights).toEqual({});
-    expect(normalized.dismissedHighYieldIds).toEqual([]);
   });
 
   it('supports adding, editing, and deleting End-of-Chapter Vault facts', () => {
@@ -152,8 +151,8 @@ describe('Chapter metrics, revision queue, highlights, and editable vault', () =
   });
 });
 
-describe('Interactive 4-tier highlighting, preset High-Yield controls, and ⌘K highlight browser', () => {
-  it('supports setting, cycling, toggling, clearing highlights, reader filtering, Revision Queue priority, and ⌘K browsing', async () => {
+describe('Interactive 4-tier highlighting, permanent High-Yield badges, and ⌘K highlight browser', () => {
+  it('supports setting, cycling, toggling, clearing highlights, reader filtering, and ⌘K browsing while keeping High-Yield badges permanent', async () => {
     const ch08 = CHAPTERS[0];
     const realLines = getAllChapterLines(ch08);
     const highYieldLine = realLines.find((l) => l.line.isHighYield)!.line;
@@ -201,22 +200,7 @@ describe('Interactive 4-tier highlighting, preset High-Yield controls, and ⌘K 
           >
             clear-hl
           </button>
-          <button
-            type="button"
-            onClick={() => study.dismissPresetHighYield(highYieldLine.id)}
-          >
-            dismiss-hy
-          </button>
-          <button
-            type="button"
-            onClick={() => study.restorePresetHighYield(highYieldLine.id)}
-          >
-            restore-hy
-          </button>
           <div data-testid="hl-value">{study.state.lineHighlights[highYieldLine.id] ?? 'none'}</div>
-          <div data-testid="hy-dismissed">
-            {study.state.dismissedHighYieldIds.includes(highYieldLine.id) ? 'yes' : 'no'}
-          </div>
           <LineReaderView chapter={miniChapter} />
           <CommandPaletteModal onClose={() => {}} />
         </div>
@@ -235,6 +219,12 @@ describe('Interactive 4-tier highlighting, preset High-Yield controls, and ⌘K 
 
     expect(screen.getByTestId('hl-value').textContent).toBe('none');
 
+    // Preset High-Yield badge is rendered permanently with no dismiss button
+    const lineEl = document.getElementById(`line-${highYieldLine.id}`)!;
+    const hyBadge = lineEl.querySelector('.micro-badge.high-yield');
+    expect(hyBadge).toBeInTheDocument();
+    expect(hyBadge?.querySelector('button')).toBeNull();
+
     // Cycle: none -> important -> volatile -> trap -> pyq -> none
     fireEvent.click(screen.getByText('cycle-hl'));
     expect(screen.getByTestId('hl-value').textContent).toBe('important');
@@ -250,8 +240,6 @@ describe('Interactive 4-tier highlighting, preset High-Yield controls, and ⌘K 
     // Toggle Trap on -> LineRow reflects highlight class and marker
     fireEvent.click(screen.getByText('toggle-trap'));
     expect(screen.getByTestId('hl-value').textContent).toBe('trap');
-
-    const lineEl = document.getElementById(`line-${highYieldLine.id}`);
     expect(lineEl).toHaveClass('has-highlight', 'highlight-trap');
 
     // Reader filter by Highlighted hides unhighlighted secondLine
@@ -266,15 +254,12 @@ describe('Interactive 4-tier highlighting, preset High-Yield controls, and ⌘K 
     fireEvent.click(allHlChip);
     expect(screen.getByText(new RegExp(`Line #${highYieldLine.lineNumber}`))).toBeInTheDocument();
 
-    // Toggle Trap again -> removes highlight
+    // Toggle Trap again -> removes highlight while High-Yield badge stays intact
     fireEvent.click(screen.getByText('toggle-trap'));
     expect(screen.getByTestId('hl-value').textContent).toBe('none');
     expect(document.getElementById(`line-${highYieldLine.id}`)).not.toHaveClass('has-highlight');
-
-    // Dismiss & restore preset High-Yield badge
-    fireEvent.click(screen.getByText('dismiss-hy'));
-    expect(screen.getByTestId('hy-dismissed').textContent).toBe('yes');
-    fireEvent.click(screen.getByText('restore-hy'));
-    expect(screen.getByTestId('hy-dismissed').textContent).toBe('no');
+    expect(
+      document.getElementById(`line-${highYieldLine.id}`)?.querySelector('.micro-badge.high-yield'),
+    ).toBeInTheDocument();
   });
 });

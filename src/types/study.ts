@@ -375,7 +375,6 @@ export interface StudyState {
   updatedAt: string;
   lineMastery: Record<string, MasteryStatus>;
   lineHighlights: Record<string, LineHighlightTier>;
-  dismissedHighYieldIds: string[];
   customLines: Record<string, CustomUserLine[]>;
   lineNotes: Record<string, UserNote[]>;
   pinnedMcqs: Record<string, SavedMcq[]>;
@@ -397,7 +396,6 @@ export interface LocalAppConfig {
   fontSize: 'compact' | 'comfortable' | 'large';
   clozeMode: boolean;
   clozeScope: ClozeScope;
-  showPresetHighYield: boolean;
   showOnlyUnmastered: boolean;
   showPdfDarkFilter: boolean;
 }

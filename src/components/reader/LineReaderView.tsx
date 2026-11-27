@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCheck, EyeOff, Highlighter, Sparkles, X } from 'lucide-react';
+import { CheckCheck, EyeOff, Highlighter, X } from 'lucide-react';
 import { useStudy } from '../../state/studyStore';
 import {
   LINE_HIGHLIGHT_META,
@@ -149,18 +149,6 @@ export function LineReaderView({ chapter }: { chapter: ChapterData }) {
                 All Lines
               </button>
             )}
-
-            <button
-              type="button"
-              className={`filter-pill ${config.showPresetHighYield ? 'active' : ''}`}
-              onClick={() =>
-                updateConfig({ showPresetHighYield: !config.showPresetHighYield })
-              }
-              title="Toggle preset NCERT High-Yield badges on or off globally"
-            >
-              <Sparkles size={12.5} />
-              {config.showPresetHighYield ? 'High-Yield: On' : 'High-Yield: Off'}
-            </button>
 
             <button
               type="button"

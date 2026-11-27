@@ -82,9 +82,6 @@ interface StudyContextValue {
   setLineHighlight: (lineId: string, tier: LineHighlightTier | null) => void;
   toggleLineHighlight: (lineId: string, tier: LineHighlightTier) => void;
   cycleLineHighlight: (lineId: string) => void;
-  dismissPresetHighYield: (lineId: string) => void;
-  restorePresetHighYield: (lineId: string) => void;
-  restoreAllPresetHighYield: (lineIds?: string[]) => void;
 
   addCustomLine: (params: {
     chapterId: string;
@@ -359,49 +356,6 @@ export function StudyProvider({
           }
         }
         return { ...prev, lineHighlights: nextHighlights };
-      });
-    },
-    [mutateState],
-  );
-
-  const dismissPresetHighYield = useCallback(
-    (lineId: string) => {
-      mutateState((prev) => {
-        if (prev.dismissedHighYieldIds.includes(lineId)) return prev;
-        return {
-          ...prev,
-          dismissedHighYieldIds: [...prev.dismissedHighYieldIds, lineId],
-        };
-      });
-    },
-    [mutateState],
-  );
-
-  const restorePresetHighYield = useCallback(
-    (lineId: string) => {
-      mutateState((prev) => {
-        if (!prev.dismissedHighYieldIds.includes(lineId)) return prev;
-        return {
-          ...prev,
-          dismissedHighYieldIds: prev.dismissedHighYieldIds.filter((id) => id !== lineId),
-        };
-      });
-    },
-    [mutateState],
-  );
-
-  const restoreAllPresetHighYield = useCallback(
-    (lineIds?: string[]) => {
-      mutateState((prev) => {
-        if (prev.dismissedHighYieldIds.length === 0) return prev;
-        if (!lineIds) {
-          return { ...prev, dismissedHighYieldIds: [] };
-        }
-        const restoreSet = new Set(lineIds);
-        return {
-          ...prev,
-          dismissedHighYieldIds: prev.dismissedHighYieldIds.filter((id) => !restoreSet.has(id)),
-        };
       });
     },
     [mutateState],
@@ -801,9 +755,6 @@ export function StudyProvider({
     setLineHighlight,
     toggleLineHighlight,
     cycleLineHighlight,
-    dismissPresetHighYield,
-    restorePresetHighYield,
-    restoreAllPresetHighYield,
     addCustomLine,
     updateCustomLine,
     deleteCustomLine,
