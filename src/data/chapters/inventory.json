@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-26T16:20:01.780Z",
+  "updatedAt": "2026-11-27T04:13:00.574Z",
   "chapters": [
     {
       "chapterId": "ch08",
@@ -18,7 +18,7 @@
       "diagramCount": 14,
       "lineCount": 332,
       "vaultCount": 42,
-      "generatedAt": "2026-11-26T16:20:01.762Z"
+      "generatedAt": "2026-11-27T04:13:00.501Z"
     },
     {
       "chapterId": "ch09",
@@ -36,7 +36,7 @@
       "diagramCount": 6,
       "lineCount": 321,
       "vaultCount": 29,
-      "generatedAt": "2026-11-26T16:20:01.770Z"
+      "generatedAt": "2026-11-27T04:13:00.513Z"
     },
     {
       "chapterId": "ch10",
@@ -54,7 +54,61 @@
       "diagramCount": 5,
       "lineCount": 206,
       "vaultCount": 23,
-      "generatedAt": "2026-11-26T16:20:01.780Z"
+      "generatedAt": "2026-11-27T04:13:00.529Z"
+    },
+    {
+      "chapterId": "ch11",
+      "chapterNumber": 11,
+      "title": "Photosynthesis in Higher Plants",
+      "unitTitle": "Unit 4 · Plant Physiology",
+      "pdfFile": "b11photosynthesis.pdf",
+      "sha256": "8302c09aa798d8fef6c4f01653caffbc09a3741d7b7c753f89201b1160f08090",
+      "pageCount": 22,
+      "ncertPageRange": [
+        131,
+        152
+      ],
+      "dataFile": "src/data/chapters/ch11-photosynthesis.ts",
+      "diagramCount": 10,
+      "lineCount": 339,
+      "vaultCount": 34,
+      "generatedAt": "2026-11-27T04:13:00.548Z"
+    },
+    {
+      "chapterId": "ch12",
+      "chapterNumber": 12,
+      "title": "Respiration in Plants",
+      "unitTitle": "Unit 4 · Plant Physiology",
+      "pdfFile": "b11respiration.pdf",
+      "sha256": "56aa058033d3b61ba9036d076058f752e96c2730bf7ef34a5beb83a913a672c3",
+      "pageCount": 13,
+      "ncertPageRange": [
+        153,
+        165
+      ],
+      "dataFile": "src/data/chapters/ch12-respiration-in-plants.ts",
+      "diagramCount": 6,
+      "lineCount": 235,
+      "vaultCount": 23,
+      "generatedAt": "2026-11-27T04:13:00.561Z"
+    },
+    {
+      "chapterId": "ch13",
+      "chapterNumber": 13,
+      "title": "Plant Growth and Development",
+      "unitTitle": "Unit 4 · Plant Physiology",
+      "pdfFile": "b11plantgrowth.pdf",
+      "sha256": "f7b576963c4a1f1208fdc7df9e974781d7492a7150bcfdc33f27b71112057d26",
+      "pageCount": 15,
+      "ncertPageRange": [
+        166,
+        180
+      ],
+      "dataFile": "src/data/chapters/ch13-plant-growth-development.ts",
+      "diagramCount": 11,
+      "lineCount": 256,
+      "vaultCount": 27,
+      "generatedAt": "2026-11-27T04:13:00.573Z"
     }
   ]
 }

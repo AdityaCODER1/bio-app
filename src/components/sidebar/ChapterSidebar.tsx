@@ -51,36 +51,45 @@ export function ChapterSidebar({ activeChapter }: { activeChapter: ChapterData }
   return (
     <aside className="sidebar-pane" aria-label="Chapter and Section Navigator">
       <div className="sidebar-scroll">
-        <div className="sidebar-section-label">NCERT Biology · Unit 3</div>
-
-        {CHAPTERS.map((ch) => {
-          const stats = computeChapterStats(ch, state);
-          const isActive = ch.id === activeChapterId;
-          return (
-            <button
-              key={ch.id}
-              type="button"
-              className={`chapter-card-btn ${isActive ? 'active' : ''}`}
-              onClick={() => setActiveChapterId(ch.id)}
+        {Array.from(new Set(CHAPTERS.map((ch) => ch.unitTitle))).map((unitTitle, uIdx) => (
+          <div key={unitTitle}>
+            <div
+              className="sidebar-section-label"
+              style={uIdx > 0 ? { marginTop: 10 } : undefined}
             >
-              <ProgressRing percent={stats.masteryPercent} />
-              <div className="chapter-card-meta">
-                <div className="chapter-card-kicker">Chapter {ch.chapterNumber}</div>
-                <div className="chapter-card-title">{ch.title}</div>
-                <div className="chapter-card-sub">
-                  <span>{stats.totalLines} lines</span>
-                  <span>·</span>
-                  <span>{ch.diagrams.length} figs</span>
-                  {stats.revisionQueueCount > 0 && (
-                    <span style={{ color: 'var(--accent-amber)' }}>
-                      · {stats.revisionQueueCount} rev
-                    </span>
-                  )}
-                </div>
-              </div>
-            </button>
-          );
-        })}
+              {unitTitle}
+            </div>
+
+            {CHAPTERS.filter((ch) => ch.unitTitle === unitTitle).map((ch) => {
+              const stats = computeChapterStats(ch, state);
+              const isActive = ch.id === activeChapterId;
+              return (
+                <button
+                  key={ch.id}
+                  type="button"
+                  className={`chapter-card-btn ${isActive ? 'active' : ''}`}
+                  onClick={() => setActiveChapterId(ch.id)}
+                >
+                  <ProgressRing percent={stats.masteryPercent} />
+                  <div className="chapter-card-meta">
+                    <div className="chapter-card-kicker">Chapter {ch.chapterNumber}</div>
+                    <div className="chapter-card-title">{ch.title}</div>
+                    <div className="chapter-card-sub">
+                      <span>{stats.totalLines} lines</span>
+                      <span>·</span>
+                      <span>{ch.diagrams.length} figs</span>
+                      {stats.revisionQueueCount > 0 && (
+                        <span style={{ color: 'var(--accent-amber)' }}>
+                          · {stats.revisionQueueCount} rev
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        ))}
 
         <div className="sidebar-divider" />
 

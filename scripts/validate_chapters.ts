@@ -14,6 +14,9 @@ const DATA_FILE_MAP: Record<string, string> = {
   ch08: 'src/data/chapters/ch08-cell-unit-of-life.ts',
   ch09: 'src/data/chapters/ch09-biomolecules.ts',
   ch10: 'src/data/chapters/ch10-cell-cycle-division.ts',
+  ch11: 'src/data/chapters/ch11-photosynthesis.ts',
+  ch12: 'src/data/chapters/ch12-respiration-in-plants.ts',
+  ch13: 'src/data/chapters/ch13-plant-growth-development.ts',
 };
 
 function sha256File(filePath: string): string {
