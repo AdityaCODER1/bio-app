@@ -888,8 +888,13 @@
 
 .annotation-body {
   color: #e4e8f0;
-  white-space: pre-wrap;
+  white-space: normal;
   line-height: 1.55;
+}
+
+.annotation-body.revision-custom-body {
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .annotation-body.mastered {
@@ -1596,12 +1601,21 @@
   background: var(--accent-blue-soft);
 }
 
+.chat-thread-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
 .chat-bubble {
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 12.8px;
   line-height: 1.58;
-  white-space: pre-wrap;
+  white-space: normal;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .chat-bubble.user {
@@ -1618,15 +1632,52 @@
   color: #e6eaf2;
 }
 
+.chat-user-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(10, 132, 255, 0.16);
+}
+
 .chat-bubble-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
   margin-top: 8px;
   padding-top: 6px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   font-size: 10.8px;
   color: var(--text-tertiary);
+}
+
+.chat-model-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+}
+
+.chat-bubble-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.chat-action-btn {
+  padding: 2px 7px;
+  font-size: 11px;
+  gap: 4px;
+  border-radius: 5px;
+}
+
+.chat-action-btn.copied {
+  color: var(--accent-green);
+  background: var(--accent-green-soft);
 }
 
 .inspector-composer {
@@ -2162,3 +2213,243 @@
   background: rgba(255, 255, 255, 0.018);
 }
 
+/* =========================================================
+   Markdown & KaTeX Math Rendering (Chat, Notes, Custom Lines, MCQs)
+   ========================================================= */
+
+.markdown-body {
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.markdown-body > *:first-child {
+  margin-top: 0;
+}
+
+.markdown-body > *:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body p {
+  margin: 0 0 0.55em;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+  margin: 0.78em 0 0.35em;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  line-height: 1.32;
+}
+
+.markdown-body h1 { font-size: 1.16em; }
+.markdown-body h2 { font-size: 1.08em; }
+.markdown-body h3 { font-size: 1.02em; color: #dbe7f8; }
+.markdown-body h4 { font-size: 0.96em; color: var(--text-secondary); }
+
+.markdown-body strong {
+  color: #f7f9fc;
+  font-weight: 650;
+}
+
+.markdown-body em {
+  color: #d7deeb;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  margin: 0.35em 0 0.6em;
+  padding-left: 1.35em;
+}
+
+.markdown-body li {
+  margin: 0.2em 0;
+}
+
+.markdown-body li > p {
+  margin: 0.15em 0;
+}
+
+.markdown-body blockquote {
+  margin: 0.5em 0;
+  padding: 4px 10px;
+  border-left: 2.5px solid var(--accent-teal);
+  background: rgba(64, 200, 224, 0.06);
+  border-radius: 0 6px 6px 0;
+  color: var(--text-secondary);
+}
+
+.markdown-body hr {
+  border: none;
+  border-top: 1px solid var(--border-hairline);
+  margin: 0.75em 0;
+}
+
+.markdown-body a,
+.markdown-inline a {
+  color: var(--accent-blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.markdown-body code,
+.markdown-inline code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.075);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #9de2f2;
+}
+
+.markdown-body pre {
+  margin: 0.55em 0;
+  padding: 9px 11px;
+  border-radius: 7px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-hairline);
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.markdown-body pre code {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 11.8px;
+  line-height: 1.5;
+}
+
+.markdown-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  margin: 0.55em 0;
+  border: 1px solid var(--border-hairline);
+  border-radius: 7px;
+}
+
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92em;
+}
+
+.markdown-body th {
+  text-align: left;
+  padding: 6px 9px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.045);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.markdown-body td {
+  padding: 6px 9px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #dfe5f0;
+  vertical-align: top;
+}
+
+.markdown-body tr:last-child td {
+  border-bottom: none;
+}
+
+.markdown-inline {
+  display: inline;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+/* KaTeX dark-theme sizing & narrow-pane scroll safety */
+.markdown-body .katex,
+.markdown-inline .katex {
+  font-size: 1.03em;
+  color: inherit;
+  white-space: nowrap;
+}
+
+.markdown-body .katex-display {
+  margin: 0.5em 0;
+  padding: 4px 2px 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  text-align: left;
+}
+
+.markdown-body .katex-display > .katex {
+  display: inline-block;
+  min-width: 100%;
+  text-align: center;
+}
+
+/* Keep KaTeX formulas masked inside unrevealed Cloze blanks */
+.cloze-blank:not(.revealed) .katex {
+  opacity: 0;
+}
+
+.cloze-blank.revealed .katex {
+  opacity: 1;
+}
+
+/* Keep MCQ option inline math vertically centered next to letter labels */
+.mcq-option-btn .markdown-inline {
+  flex: 1;
+  min-width: 0;
+}
+
+.mcq-question .markdown-body p {
+  margin-bottom: 0.35em;
+}
+
+/* =========================================================
+   Collapsible Long Custom Lines & Tagged Notes (>3 lines)
+   ========================================================= */
+
+.annotation-collapsible {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.annotation-collapsible-body {
+  width: 100%;
+  min-width: 0;
+  transition: max-height 160ms ease;
+}
+
+.annotation-collapsible-body.is-collapsed {
+  max-height: 4.8em;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
+}
+
+.annotation-collapse-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(10, 132, 255, 0.22);
+  background: rgba(10, 132, 255, 0.08);
+  color: #5eb2ff;
+  font-size: 11px;
+  font-weight: 500;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.annotation-collapse-toggle:hover {
+  background: var(--accent-blue-soft);
+  border-color: rgba(10, 132, 255, 0.4);
+  color: var(--text-primary);
+}

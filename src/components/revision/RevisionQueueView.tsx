@@ -20,6 +20,9 @@ import {
   getAllChapterLines,
   isClozeActiveForLine,
 } from '../../utils/chapterMetrics';
+import { parseInlineClozeSyntax } from '../../utils/cloze';
+import { CollapsibleAnnotationBody } from '../common/CollapsibleAnnotationBody';
+import { MarkdownMath } from '../common/MarkdownMath';
 import { ClozeText } from '../reader/ClozeText';
 
 type QueueFilter = 'all' | 'lines' | 'custom_lines' | 'notes' | 'mcqs';
@@ -79,20 +82,28 @@ function PinnedMcqPracticeCard({
 
       {mcq.assertion && (
         <div className="mcq-statement-box">
-          <strong>Assertion (A):</strong> {mcq.assertion}
-          <br />
-          <strong>Reason (R):</strong> {mcq.reason}
+          <div>
+            <strong>Assertion (A):</strong> <MarkdownMath content={mcq.assertion} inline />
+          </div>
+          <div>
+            <strong>Reason (R):</strong> <MarkdownMath content={mcq.reason ?? ''} inline />
+          </div>
         </div>
       )}
       {mcq.statement1 && (
         <div className="mcq-statement-box">
-          <strong>Statement I:</strong> {mcq.statement1}
-          <br />
-          <strong>Statement II:</strong> {mcq.statement2}
+          <div>
+            <strong>Statement I:</strong> <MarkdownMath content={mcq.statement1} inline />
+          </div>
+          <div>
+            <strong>Statement II:</strong> <MarkdownMath content={mcq.statement2 ?? ''} inline />
+          </div>
         </div>
       )}
 
-      <div className="mcq-question">{mcq.question}</div>
+      <div className="mcq-question">
+        <MarkdownMath content={mcq.question} />
+      </div>
 
       <div className="mcq-options">
         {mcq.options.map((opt, idx) => {
@@ -113,7 +124,7 @@ function PinnedMcqPracticeCard({
               }}
             >
               <strong style={{ fontFamily: 'var(--font-mono)' }}>{letters[idx]}.</strong>
-              <span>{opt}</span>
+              <MarkdownMath content={opt} inline />
             </button>
           );
         })}
@@ -121,8 +132,10 @@ function PinnedMcqPracticeCard({
 
       {picked !== null && (
         <div className="mcq-explanation">
-          <div>{mcq.explanation}</div>
-          <div className="mcq-proof">NCERT anchor: “{mcq.ncertProof}”</div>
+          <MarkdownMath content={mcq.explanation} />
+          <div className="mcq-proof">
+            NCERT anchor: “<MarkdownMath content={mcq.ncertProof} inline />”
+          </div>
           <div style={{ marginTop: 6 }}>
             <button type="button" className="btn-ghost" onClick={() => setPicked(null)}>
               <RotateCcw size={12} /> Try Again
@@ -500,7 +513,14 @@ export function RevisionQueueView({ chapter }: { chapter: ChapterData }) {
                           type="button"
                           className="btn-primary"
                           onClick={() => {
-                            updateCustomLine(parentLineId, item.id, { text: editText.trim() });
+                            const parsed = parseInlineClozeSyntax(editText.trim());
+                            updateCustomLine(parentLineId, item.id, {
+                              text: parsed.cleanText,
+                              clozeTerms:
+                                parsed.clozeTerms.length > 0
+                                  ? parsed.clozeTerms
+                                  : item.clozeTerms,
+                            });
                             setEditingId(null);
                           }}
                         >
@@ -509,13 +529,17 @@ export function RevisionQueueView({ chapter }: { chapter: ChapterData }) {
                       </div>
                     </div>
                   ) : (
-                    <div style={{ fontSize: 14.5, lineHeight: 1.6 }}>
+                    <CollapsibleAnnotationBody
+                      rawText={item.text}
+                      className="annotation-body revision-custom-body"
+                    >
                       <ClozeText
                         text={item.text}
                         clozeTerms={item.clozeTerms}
                         enabled={config.clozeMode}
+                        renderMarkdownMath
                       />
-                    </div>
+                    </CollapsibleAnnotationBody>
                   )}
                 </div>
               );
@@ -610,7 +634,9 @@ export function RevisionQueueView({ chapter }: { chapter: ChapterData }) {
                       </div>
                     </div>
                   ) : (
-                    <div className="annotation-body">{note.content}</div>
+                    <CollapsibleAnnotationBody rawText={note.content} className="annotation-body">
+                      <MarkdownMath content={note.content} />
+                    </CollapsibleAnnotationBody>
                   )}
                 </div>
               );

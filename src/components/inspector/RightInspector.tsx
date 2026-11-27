@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   BookmarkPlus,
   Check,
   ChevronLeft,
   ChevronRight,
+  Copy,
   ExternalLink,
   FileText,
   HelpCircle,
@@ -29,6 +30,12 @@ import {
 } from '../../types/study';
 import { resolveAssetUrl } from '../../utils/assetUrl';
 import { findDiagramById, getAllChapterLines } from '../../utils/chapterMetrics';
+import {
+  copyTextToClipboard,
+  formatQaPairForCopy,
+  formatThreadForCopy,
+} from '../../utils/clipboard';
+import { MarkdownMath } from '../common/MarkdownMath';
 
 const QUICK_PROMPTS = [
   'Explain this NCERT line deeply',
@@ -148,6 +155,28 @@ export function RightInspector({ chapter, onOpenSettings }: RightInspectorProps)
   const [askLoading, setAskLoading] = useState(false);
   const [askError, setAskError] = useState<string | null>(null);
   const [pinnedNoticeId, setPinnedNoticeId] = useState<string | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const copyTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current !== null) {
+        window.clearTimeout(copyTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleCopy = async (key: string, text: string) => {
+    const ok = await copyTextToClipboard(text);
+    if (!ok) return;
+    setCopiedKey(key);
+    if (copyTimerRef.current !== null) {
+      window.clearTimeout(copyTimerRef.current);
+    }
+    copyTimerRef.current = window.setTimeout(() => {
+      setCopiedKey((prev) => (prev === key ? null : prev));
+    }, 1800);
+  };
 
   // MCQ Lab state
   const [mcqStyle, setMcqStyle] = useState<McqStyle>('single_correct');
@@ -169,6 +198,7 @@ export function RightInspector({ chapter, onOpenSettings }: RightInspectorProps)
     setDraftAnswers({});
     setAskError(null);
     setMcqError(null);
+    setCopiedKey(null);
   }, [resolvedTarget?.id, resolvedTarget?.pdfPage]);
 
   if (!resolvedTarget) return null;
@@ -322,53 +352,159 @@ export function RightInspector({ chapter, onOpenSettings }: RightInspectorProps)
               </div>
             ) : (
               <>
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <div className="chat-thread-toolbar">
                   <button
                     type="button"
-                    className="btn-ghost"
+                    className="btn-ghost chat-action-btn"
+                    onClick={() =>
+                      void handleCopy(
+                        'thread',
+                        formatThreadForCopy(resolvedTarget.title, thread),
+                      )
+                    }
+                    title="Copy entire chat thread for this item"
+                  >
+                    {copiedKey === 'thread' ? (
+                      <>
+                        <Check size={12} color="var(--accent-green)" /> Copied Thread
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={12} /> Copy Thread
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-ghost chat-action-btn"
                     onClick={() => clearChatThread(resolvedTarget.id)}
                   >
                     <Trash2 size={12} /> Clear Thread
                   </button>
                 </div>
-                {thread.map((msg) => (
-                  <div key={msg.id} className={`chat-bubble ${msg.role}`}>
-                    <div>{msg.content}</div>
-                    {msg.role === 'assistant' && (
-                      <div className="chat-bubble-footer">
-                        <span>{msg.modelUsed || effectiveModelId}</span>
-                        <button
-                          type="button"
-                          className="btn-ghost"
-                          style={{ padding: '2px 7px', fontSize: 11 }}
-                          onClick={() => {
-                            addNote({
-                              chapterId: chapter.id,
-                              targetId: resolvedTarget.id,
-                              targetType: resolvedTarget.type,
-                              content: msg.content,
-                              tags: ['Concept'],
-                              source: 'gemini',
-                              modelUsed: msg.modelUsed || effectiveModelId,
-                            });
-                            setPinnedNoticeId(msg.id);
-                            window.setTimeout(() => setPinnedNoticeId(null), 1800);
-                          }}
-                        >
-                          {pinnedNoticeId === msg.id ? (
-                            <>
-                              <Check size={12} color="var(--accent-green)" /> Pinned to Line
-                            </>
-                          ) : (
-                            <>
-                              <BookmarkPlus size={12} /> Pin to Line
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                {thread.map((msg, msgIdx) => {
+                  let pairedUserQuery: string | null = null;
+                  if (msg.role === 'assistant') {
+                    for (let i = msgIdx - 1; i >= 0; i--) {
+                      if (thread[i].role === 'user') {
+                        pairedUserQuery = thread[i].content;
+                        break;
+                      }
+                    }
+                  }
+
+                  const msgCopyKey = `msg-${msg.id}`;
+                  const qaCopyKey = `qa-${msg.id}`;
+
+                  return (
+                    <div key={msg.id} className={`chat-bubble ${msg.role}`}>
+                      <MarkdownMath content={msg.content} className="chat-markdown" />
+                      {msg.role === 'user' ? (
+                        <div className="chat-user-footer">
+                          <button
+                            type="button"
+                            className={`btn-ghost chat-action-btn ${
+                              copiedKey === msgCopyKey ? 'copied' : ''
+                            }`}
+                            aria-label="Copy query"
+                            title="Copy your query"
+                            onClick={() => void handleCopy(msgCopyKey, msg.content)}
+                          >
+                            {copiedKey === msgCopyKey ? (
+                              <>
+                                <Check size={11.5} color="var(--accent-green)" /> Copied
+                              </>
+                            ) : (
+                              <>
+                                <Copy size={11.5} /> Copy
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="chat-bubble-footer">
+                          <span className="chat-model-label">
+                            {msg.modelUsed || effectiveModelId}
+                          </span>
+                          <div className="chat-bubble-actions">
+                            <button
+                              type="button"
+                              className={`btn-ghost chat-action-btn ${
+                                copiedKey === msgCopyKey ? 'copied' : ''
+                              }`}
+                              aria-label="Copy Gemini output"
+                              title="Copy Gemini output (Markdown & LaTeX)"
+                              onClick={() => void handleCopy(msgCopyKey, msg.content)}
+                            >
+                              {copiedKey === msgCopyKey ? (
+                                <>
+                                  <Check size={11.5} color="var(--accent-green)" /> Copied
+                                </>
+                              ) : (
+                                <>
+                                  <Copy size={11.5} /> Copy
+                                </>
+                              )}
+                            </button>
+                            {pairedUserQuery && (
+                              <button
+                                type="button"
+                                className={`btn-ghost chat-action-btn ${
+                                  copiedKey === qaCopyKey ? 'copied' : ''
+                                }`}
+                                aria-label="Copy query and Gemini output"
+                                title="Copy both your query and this Gemini response"
+                                onClick={() =>
+                                  void handleCopy(
+                                    qaCopyKey,
+                                    formatQaPairForCopy(pairedUserQuery!, msg.content),
+                                  )
+                                }
+                              >
+                                {copiedKey === qaCopyKey ? (
+                                  <>
+                                    <Check size={11.5} color="var(--accent-green)" /> Copied Q&A
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy size={11.5} /> Copy Q&A
+                                  </>
+                                )}
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="btn-ghost chat-action-btn"
+                              onClick={() => {
+                                addNote({
+                                  chapterId: chapter.id,
+                                  targetId: resolvedTarget.id,
+                                  targetType: resolvedTarget.type,
+                                  content: msg.content,
+                                  tags: ['Concept'],
+                                  source: 'gemini',
+                                  modelUsed: msg.modelUsed || effectiveModelId,
+                                });
+                                setPinnedNoticeId(msg.id);
+                                window.setTimeout(() => setPinnedNoticeId(null), 1800);
+                              }}
+                            >
+                              {pinnedNoticeId === msg.id ? (
+                                <>
+                                  <Check size={11.5} color="var(--accent-green)" /> Pinned
+                                </>
+                              ) : (
+                                <>
+                                  <BookmarkPlus size={11.5} /> Pin to Line
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </>
             )}
 
@@ -511,20 +647,31 @@ export function RightInspector({ chapter, onOpenSettings }: RightInspectorProps)
 
                       {draft.assertion && (
                         <div className="mcq-statement-box">
-                          <strong>A:</strong> {draft.assertion}
-                          <br />
-                          <strong>R:</strong> {draft.reason}
+                          <div>
+                            <strong>A:</strong> <MarkdownMath content={draft.assertion} inline />
+                          </div>
+                          <div>
+                            <strong>R:</strong>{' '}
+                            <MarkdownMath content={draft.reason ?? ''} inline />
+                          </div>
                         </div>
                       )}
                       {draft.statement1 && (
                         <div className="mcq-statement-box">
-                          <strong>Statement I:</strong> {draft.statement1}
-                          <br />
-                          <strong>Statement II:</strong> {draft.statement2}
+                          <div>
+                            <strong>Statement I:</strong>{' '}
+                            <MarkdownMath content={draft.statement1} inline />
+                          </div>
+                          <div>
+                            <strong>Statement II:</strong>{' '}
+                            <MarkdownMath content={draft.statement2 ?? ''} inline />
+                          </div>
                         </div>
                       )}
 
-                      <div className="mcq-question">{draft.question}</div>
+                      <div className="mcq-question">
+                        <MarkdownMath content={draft.question} />
+                      </div>
 
                       <div className="mcq-options">
                         {draft.options.map((opt, optIdx) => {
@@ -546,7 +693,7 @@ export function RightInspector({ chapter, onOpenSettings }: RightInspectorProps)
                               <strong style={{ fontFamily: 'var(--font-mono)' }}>
                                 {letters[optIdx]}.
                               </strong>
-                              <span>{opt}</span>
+                              <MarkdownMath content={opt} inline />
                             </button>
                           );
                         })}
@@ -554,8 +701,10 @@ export function RightInspector({ chapter, onOpenSettings }: RightInspectorProps)
 
                       {picked !== undefined && (
                         <div className="mcq-explanation">
-                          <div>{draft.explanation}</div>
-                          <div className="mcq-proof">NCERT anchor: “{draft.ncertProof}”</div>
+                          <MarkdownMath content={draft.explanation} />
+                          <div className="mcq-proof">
+                            NCERT anchor: “<MarkdownMath content={draft.ncertProof} inline />”
+                          </div>
                         </div>
                       )}
                     </div>
@@ -608,20 +757,31 @@ export function RightInspector({ chapter, onOpenSettings }: RightInspectorProps)
 
                       {mcq.assertion && (
                         <div className="mcq-statement-box">
-                          <strong>A:</strong> {mcq.assertion}
-                          <br />
-                          <strong>R:</strong> {mcq.reason}
+                          <div>
+                            <strong>A:</strong> <MarkdownMath content={mcq.assertion} inline />
+                          </div>
+                          <div>
+                            <strong>R:</strong>{' '}
+                            <MarkdownMath content={mcq.reason ?? ''} inline />
+                          </div>
                         </div>
                       )}
                       {mcq.statement1 && (
                         <div className="mcq-statement-box">
-                          <strong>Statement I:</strong> {mcq.statement1}
-                          <br />
-                          <strong>Statement II:</strong> {mcq.statement2}
+                          <div>
+                            <strong>Statement I:</strong>{' '}
+                            <MarkdownMath content={mcq.statement1} inline />
+                          </div>
+                          <div>
+                            <strong>Statement II:</strong>{' '}
+                            <MarkdownMath content={mcq.statement2 ?? ''} inline />
+                          </div>
                         </div>
                       )}
 
-                      <div className="mcq-question">{mcq.question}</div>
+                      <div className="mcq-question">
+                        <MarkdownMath content={mcq.question} />
+                      </div>
 
                       <div className="mcq-options">
                         {mcq.options.map((opt, optIdx) => {
@@ -648,7 +808,7 @@ export function RightInspector({ chapter, onOpenSettings }: RightInspectorProps)
                               <strong style={{ fontFamily: 'var(--font-mono)' }}>
                                 {letters[optIdx]}.
                               </strong>
-                              <span>{opt}</span>
+                              <MarkdownMath content={opt} inline />
                             </button>
                           );
                         })}
@@ -656,8 +816,10 @@ export function RightInspector({ chapter, onOpenSettings }: RightInspectorProps)
 
                       {picked !== undefined && (
                         <div className="mcq-explanation">
-                          <div>{mcq.explanation}</div>
-                          <div className="mcq-proof">NCERT anchor: “{mcq.ncertProof}”</div>
+                          <MarkdownMath content={mcq.explanation} />
+                          <div className="mcq-proof">
+                            NCERT anchor: “<MarkdownMath content={mcq.ncertProof} inline />”
+                          </div>
                         </div>
                       )}
                     </div>

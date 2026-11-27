@@ -1,14 +1,31 @@
 import { useState } from 'react';
 import { splitClozeSegments } from '../../utils/cloze';
+import { MarkdownMath } from '../common/MarkdownMath';
 
 interface ClozeTextProps {
   text: string;
   clozeTerms: string[];
   enabled: boolean;
+  renderMarkdownMath?: boolean;
 }
 
-export function ClozeText({ text, clozeTerms, enabled }: ClozeTextProps) {
+export function ClozeText({
+  text,
+  clozeTerms,
+  enabled,
+  renderMarkdownMath = false,
+}: ClozeTextProps) {
   const [revealed, setRevealed] = useState<Record<number, boolean>>({});
+
+  if (renderMarkdownMath) {
+    return (
+      <MarkdownMath
+        content={text}
+        clozeTerms={clozeTerms}
+        clozeEnabled={enabled}
+      />
+    );
+  }
 
   if (!enabled || clozeTerms.length === 0) {
     return <>{text}</>;

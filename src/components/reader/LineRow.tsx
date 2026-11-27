@@ -20,6 +20,8 @@ import {
 } from '../../types/study';
 import { isClozeActiveForLine } from '../../utils/chapterMetrics';
 import { parseInlineClozeSyntax } from '../../utils/cloze';
+import { CollapsibleAnnotationBody } from '../common/CollapsibleAnnotationBody';
+import { MarkdownMath } from '../common/MarkdownMath';
 import { ClozeText } from './ClozeText';
 
 interface LineRowProps {
@@ -387,13 +389,17 @@ export function LineRow({ chapterId, line }: LineRowProps) {
                   </div>
                 </div>
               ) : (
-                <div className={`annotation-body ${cl.status === 'mastered' ? 'mastered' : ''}`}>
+                <CollapsibleAnnotationBody
+                  rawText={cl.text}
+                  className={`annotation-body ${cl.status === 'mastered' ? 'mastered' : ''}`}
+                >
                   <ClozeText
                     text={cl.text}
                     clozeTerms={cl.clozeTerms}
                     enabled={config.clozeMode}
+                    renderMarkdownMath
                   />
-                </div>
+                </CollapsibleAnnotationBody>
               )}
             </div>
           ))}
@@ -483,9 +489,12 @@ export function LineRow({ chapterId, line }: LineRowProps) {
                   </div>
                 </div>
               ) : (
-                <div className={`annotation-body ${note.status === 'mastered' ? 'mastered' : ''}`}>
-                  {note.content}
-                </div>
+                <CollapsibleAnnotationBody
+                  rawText={note.content}
+                  className={`annotation-body ${note.status === 'mastered' ? 'mastered' : ''}`}
+                >
+                  <MarkdownMath content={note.content} />
+                </CollapsibleAnnotationBody>
               )}
             </div>
           ))}
